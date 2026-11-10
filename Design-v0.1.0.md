@@ -297,6 +297,7 @@ The 0.3.0 implementation remains the accepted baseline. Candidate 0.4.0 adds:
 9. Export and reopen a project archive; confirm all sampler settings and audio persist.
 10. Open a 0.3.0 project and confirm it loads with the full source selected and existing playback settings intact.
 11. Re-run the accepted 0.3.0 playback, simultaneous playback, source-retention, and portability checks as regression tests.
+
 ### First-milestone acceptance checks
 
 <badge>PASS — user tested</badge>
