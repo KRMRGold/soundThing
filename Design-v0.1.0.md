@@ -15,7 +15,7 @@ Sound things are self-contained, independently playable musical objects. Each so
 
 The canvas is the shared spatial workspace where sound things live. It provides a place to create, arrange, select, inspect, and interact with them; it is not itself the instrument, and it is not a conventional timeline. A sound thing remains an independent playable object wherever it is positioned on the canvas.
 
-The goal is not to recreate an existing DAW feature for feature. Soundthing draws inspiration from samplers, live looping, DJ equipment, modular workflows, and established DAWs while exploring a more direct, spatial way to create music.
+The goal is not to recreate an existing DAW feature for feature. Soundthing draws inspiration from the immediacy of DJ stations and instruments, the creative depth and routing of Ableton Live and Reason, the sample-focused workflows of Renoise, and the sequencing and production flexibility of FL Studio. It should bring these ideas together in a spatial, approachable interface that is easy to begin using and reveals deeper capabilities as users need them.
 
 ## 2. Workstation and Infinite Canvas
 
@@ -25,9 +25,12 @@ The goal is not to recreate an existing DAW feature for feature. Soundthing draw
 - The canvas provides the context for creating, arranging, selecting, inspecting, and accessing sound things.
 - Moving or arranging a sound thing on the canvas does not, by itself, change its musical behavior.
 - Related sound things remain visually independent by default; users can inspect relationships and navigate between related objects when needed.
+- Sound things can be connected with visible wires to establish relationships such as synchronization, audio routing, sidechains, or control/parameter links.
+- Connections should communicate what they carry; audio, sync, and modulation/control links should be distinguishable rather than treated as one ambiguous kind of wire.
 - Workstation-level controls may coordinate multiple sound things without replacing their individual controls or settings.
+- Processing and routing relationships should be visible on the canvas while remaining understandable at a glance.
 
-The canvas is not a timeline and is not itself the instrument. Musical sound is produced by the sound things; the canvas is the spatial environment that holds and organizes them.
+The canvas is not a timeline and is not itself the instrument. Musical sound is produced by the sound things and their connected processing/modulation components; the canvas is the spatial environment that holds and organizes them.
 
 ## 3. Sound Things
 
@@ -86,11 +89,24 @@ Slicing and drum racks should follow the established interaction concepts and ex
 
 The exact feature parity, controls, and mapping details should be investigated against the relevant Ableton and Bitwig workflows before implementation.
 
-## 7. Optional Effects and Plugins
+## 7. Modular Effects, Routing, Automation, and LFOs
 
-Effects such as reverb, delay, and distortion are optional additions rather than mandatory parts of every sound thing.
+Effects are modular components that can be connected beneath a sound thing, forming a visible processing rack. The rack belongs to that sound thing's signal path and can be expanded as needed. Effects such as reverb, delay, distortion, filtering, and dynamics are examples; they should not be permanently built into every sound thing.
 
-Effects may appear as visible modules attached to a sound thing, potentially beneath it on the canvas or in an expanded view.
+The modular approach should also allow sound things to be wired to one another. Connections can support different purposes, including:
+- **Audio routing:** sending one sound thing's output into another path or destination.
+- **Sidechains:** using one sound thing's signal to influence processing on another, such as a compressor.
+- **Synchronization:** sharing timing or transport-related signals.
+- **Control links:** allowing one sound thing or control to influence another sound thing's volume or other parameters.
+
+These connection types should have clear visual identities and understandable behavior. A wire should make it apparent what is connected and what kind of relationship it creates. The exact routing model, connection rules, and signal-flow representation remain to be designed.
+
+Automation and LFOs are also part of the creative system:
+- **Automation** allows parameter values to change over time according to an editable pattern or recorded movement.
+- **LFOs** provide repeating modulation that can influence parameters such as volume, filter cutoff, pitch, pan, or effect settings.
+- Modulation sources should be connectable to compatible controls on sound things and effect modules, rather than being limited to one fixed destination.
+
+The aim is to make these capabilities composable and visually understandable without forcing new users to confront a complex modular system immediately. Basic sound things should work on their own; racks, wires, automation, and modulation can be introduced progressively when the user wants more control.
 
 Third-party plugin support, including VST compatibility, is a possible future capability. Its feasibility depends on the selected runtime and audio architecture, so it is not an established requirement for the first prototype.
 
@@ -161,8 +177,9 @@ The specific storage system, audio import workflow, recording format, and persis
 
 ### Technical validation questions
 
-1. Do the candidate audio libraries support the required playback and synchronization behaviors?
+1. Do the candidate audio libraries support the required playback, routing, modulation, and synchronization behaviors?
 2. How can multiple independent sound things play simultaneously without timing drift or unnecessary resource use?
+3. What audio graph and parameter-control architecture can support modular effect chains, inter-object routing, sidechains, automation, and LFOs?
 3. How should imported audio sources be stored and retained when original external files are moved or deleted?
 4. How should source references be tracked so cleanup never removes audio still used by a sound thing or active operation?
 5. How should sound thing variations preserve configuration history while sharing source audio?
@@ -222,6 +239,8 @@ Acceptance criteria should be agreed before an implementation candidate is evalu
 - **Non-destructive iteration:** Creating a variation preserves the original sound thing; shared audio sources remain available while referenced or actively used.
 - **Drag-to-create:** Dropping an audio file onto the canvas creates a sound thing that can be shaped into different kinds of sound-making objects.
 - **Inspectable:** Users can discover how an object works and where it came from.
+- **Modular:** Effects, routing, automation, and modulation can be connected and combined as needed.
+- **Progressive disclosure:** The basic experience stays approachable; advanced routing and modulation are introduced when useful rather than shown all at once.
 - **Extensible:** Optional effects and new playback capabilities can be added without making every object needlessly complex.
 - **Progressive:** Begin with a useful core and expand as real needs emerge.
 - **Validated:** Architecture and implementation choices are tested against the intended musical experience.
@@ -239,7 +258,7 @@ A reasonable starting slice is:
 - A clear way to inspect an object's source relationship.
 - Basic persistence sufficient to validate the workflow.
 
-After that foundation works, slicing, MIDI-style pitched playback, drum racks, effects, and workstation-wide synchronization can be developed as separate, testable capabilities.
+After that foundation works, slicing, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization can be developed as separate, testable capabilities. These are part of the broader design direction, not requirements to cram into the first prototype.
 
 ## 14. Open Design Questions
 
@@ -249,6 +268,10 @@ After that foundation works, slicing, MIDI-style pitched playback, drum racks, e
 - What source-retention and cleanup rules should apply when no sound thing or active operation uses an audio source?
 - What is the preferred default for creating new objects versus modifying existing ones, given that iteration normally preserves the original?
 - Which Ableton Live and Bitwig Studio slicing/drum-rack behaviors should be matched first?
+- How should modular effect racks be laid out and connected beneath sound things?
+- Which connection types should be supported between sound things, and how should audio, sidechain, sync, and control wires be distinguished?
+- How should automation and LFOs be created, edited, and connected to sound thing/effect parameters?
+- How can advanced routing and modulation remain discoverable without overwhelming the basic interface?
 - How should original-tempo markers be displayed alongside master tempo and effective playback tempo?
 - Which audio and canvas libraries meet the requirements in practice?
 - What is the minimum viable recording and persistence workflow?
