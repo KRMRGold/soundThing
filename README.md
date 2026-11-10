@@ -2,7 +2,7 @@
 
 An instrument-centered music-making environment built around a spatial canvas of independently playable sound things.
 
-**Current state:** playable-canvas prototype 0.3.0 — portable project save/open is implemented; browser runtime verification is pending.
+**Current state:** prototype candidate 0.4.0 — draggable sample regions, One-Shot/Loop modes, and independent loop boundaries are implemented; build and browser verification are pending.
 
 ## Run locally
 
@@ -25,7 +25,9 @@ npm run build
 ## First prototype
 
 - Import audio by dropping a file onto the canvas or using **Import audio**.
-- Play, pause/resume, stop, and loop each sound thing independently.
+- Drag across the waveform to select a sample region and adjust its start/end boundaries.
+- Play the selected region in One-Shot or Loop mode.
+- Set independent loop start/end points inside the selected region.
 - Adjust playback rate and level per sound thing.
 - Use the **+** control to create another sound thing referencing the same managed audio source.
 - Choose **Save project** to download a portable `.soundthing` project file.
@@ -33,7 +35,7 @@ npm run build
 
 ## Project files and browser storage
 
-A `.soundthing` file is a ZIP-based project archive containing a versioned JSON manifest, the workspace layout and sound-thing settings, and the audio assets used by the project. It is self-contained: moving the project file to another device does not require the original audio files or the browser's existing database.
+A `.soundthing` file is a ZIP-based project archive containing a versioned JSON manifest, the workspace layout and sound-thing sampler settings, and the audio assets used by the project. It is self-contained: moving the project file to another device does not require the original audio files or the browser's existing database.
 
 Saving also keeps a local IndexedDB copy so the project can be restored when reopening the app in the same browser profile and site origin. Opening a project imports its audio assets into browser storage and replaces the currently displayed workspace. Existing unreferenced audio records may remain in local storage for now.
 
