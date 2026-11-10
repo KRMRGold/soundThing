@@ -3,6 +3,7 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  SelectionMode,
   ReactFlowProvider,
   useNodesState,
   useReactFlow,
@@ -420,7 +421,7 @@ function Canvas() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-symbol">s</span>
-          <div><strong>soundThing</strong><small>playable canvas · prototype 0.4.0</small></div>
+          <div><strong>soundThing</strong><small>playable canvas · prototype 0.5.0</small></div>
         </div>
         <div className="toolbar">
           <button className="toolbar-button" onClick={() => projectInput.current?.click()}>Open project</button>
@@ -463,6 +464,9 @@ function Canvas() {
           edges={[]}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          panOnDrag={[1]}
           fitView
           minZoom={0.15}
           maxZoom={2}
