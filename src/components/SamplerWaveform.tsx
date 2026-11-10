@@ -25,6 +25,7 @@ export default function SamplerWaveform({
 }: SamplerWaveformProps) {
   const [draft, setDraft] = useState<Region | null>(null);
   const drag = useRef<DragState | null>(null);
+  const draftRef = useRef<Region | null>(null);
   const waveformRef = useRef<HTMLDivElement>(null);
   const region = draft ?? { sampleStart, sampleEnd };
   const minimum = Math.min(0.01, duration);
@@ -51,7 +52,11 @@ export default function SamplerWaveform({
       sampleStart: kind === "select" ? point : sampleStart,
       sampleEnd: kind === "select" ? Math.min(duration, point + minimum) : sampleEnd,
     };
-    if (kind === "select") setDraft({ sampleStart: point, sampleEnd: Math.min(duration, point + minimum) });
+    if (kind === "select") {
+      const initial = { sampleStart: point, sampleEnd: Math.min(duration, point + minimum) };
+      draftRef.current = initial;
+      setDraft(initial);
+    }
     waveformRef.current?.setPointerCapture(event.pointerId);
     event.preventDefault();
   }
@@ -75,16 +80,18 @@ export default function SamplerWaveform({
     } else {
       next = { sampleStart, sampleEnd: Math.max(point, sampleStart + minimum) };
     }
+    draftRef.current = next;
     setDraft(next);
   }
 
   function finishPointer(event: PointerEvent<HTMLDivElement>) {
     if (!drag.current) return;
-    const finalRegion = draft ?? region;
+    const finalRegion = draftRef.current ?? draft ?? region;
     const safeStart = Math.max(0, Math.min(finalRegion.sampleStart, duration - minimum));
     const safeEnd = Math.max(safeStart + minimum, Math.min(finalRegion.sampleEnd, duration));
     onRegionChange({ sampleStart: safeStart, sampleEnd: safeEnd });
     drag.current = null;
+    draftRef.current = null;
     setDraft(null);
     if (waveformRef.current?.hasPointerCapture(event.pointerId)) {
       waveformRef.current.releasePointerCapture(event.pointerId);
