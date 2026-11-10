@@ -1,8 +1,8 @@
-# Soundthing: Initial Design v0.1.0
+# Soundthing: Initial Design v0.1.1
 
 - **Artifact:** Initial design
-- **Version:** 0.1.0
-- **Status:** Initial design candidate, not an implementation specification
+- **Version:** 0.1.1
+- **Status:** Living design document; prototype candidate 0.3.0 validation complete
 - **Development workflow:** [Development State Machine Workflow v1.6.0](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md)
 - **Workflow adoption:** Soundthing initially adopted workflow v1.6.0. It follows the current canonical version by default; this records the starting point, not a permanent version pin.
 - **Collaboration guidance:** The applicable [Meta-Modules](https://github.com/KRMRGold/Meta-Modules) are summarized in Section 11.
@@ -154,7 +154,7 @@ The first playable-canvas prototype uses this stack as a working candidate. It i
 - **Portable project files:** versioned `.soundthing` ZIP archives containing a manifest, workspace configuration, and the audio assets referenced by that workspace.
 - **Tauri:** deferred until desktop-specific capabilities justify it.
 
-The current prototype has been exercised in a browser for core playback, simultaneous playback of two sound things, independent settings, local workspace save/restore, and portable project-file save/open. The user confirmed that saving a `.soundthing` file and reopening it restores the project state and audio in both the original browser and a separate Chrome profile with independent browser storage. Opening it on another device remains untested. Performance with larger numbers of simultaneous sound things and suitability for the complete routing/modulation architecture remain unverified.
+The current prototype has been exercised in a browser for core playback, simultaneous playback of multiple sound things, independent settings, local workspace save/restore, and portable project-file save/open. The user confirmed that the `.soundthing` project restores its state and audio in both the original browser and a separate Chrome profile with independent browser storage. They also confirmed that imported audio remains playable after moving or renaming the original external file, that three to five sound things can play simultaneously, and that duplicated sound things sharing a source can play alongside sound things using different sources. These checks pass in the tested browser environment. Opening the project on another device and suitability for the complete routing/modulation architecture remain unverified.
 
 ### Audio architecture boundary
 
@@ -270,7 +270,7 @@ A first implementation candidate now exists in the repository. It includes:
 - IndexedDB storage for imported audio blobs and the browser's current workspace.
 - Portable `.soundthing` project files: **Save project** downloads a versioned archive containing the workspace and its referenced audio assets; **Open project** imports the archive and restores the workspace.
 
-**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and IndexedDB workspace save/restore. Candidate 0.3.0 adds portable project archive save/open; its TypeScript check and Vite production build passed in GitHub Actions for commit `30292c3e1931906addb8e274dae7f3307f867b04` (run [42763305503](https://github.com/KRMRGold/soundThing/actions/runs/42763305503)). The user confirmed that Save project downloads a `.soundthing` file and Open project successfully restores the workspace, settings, and audio in both the original browser and a separate Chrome profile with independent browser storage. Cross-device portability remains untested.
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Candidate 0.3.0 adds portable project archive save/open; its TypeScript check and Vite production build passed in GitHub Actions for commit `30292c3e1931906addb8e274dae7f3307f867b04` (run [42763305503](https://github.com/KRMRGold/soundThing/actions/runs/42763305503)). User-run browser checks confirm Play, Pause, Resume, Stop, and Loop; simultaneous playback and independent settings; local workspace save/restore; `.soundthing` save/open in the original browser and a separate Chrome profile; continued playback after moving or renaming the original external audio file; three to five simultaneous sound things; and concurrent playback of shared-source duplicates alongside sound things using different sources. All listed checks passed in the user's test environment. Cross-device portability and advanced routing/modulation architecture remain unverified.
 
 ### First-milestone acceptance checks
 
@@ -285,11 +285,12 @@ A first implementation candidate now exists in the repository. It includes:
 
 5. Save a `.soundthing` project file, open it, and confirm the workspace, settings, and audio assets are restored.
 
-<badge>NOT YET TESTED</badge>
+<badge>PASS — user tested</badge>
 
-6. **User-confirmed:** open the project file in a separate Chrome profile with independent browser storage; the workspace, settings, and audio restore successfully. Opening it on another device remains untested.
+6. Open the project file in a separate Chrome profile with independent browser storage; the workspace, settings, and audio restore successfully.
 7. Move or rename the original external audio file and confirm the managed import remains playable.
-8. Exercise several (for example, three to five) simultaneously playing sound things and inspect responsiveness and audio stability.
+8. Exercise three to five simultaneously playing sound things and inspect responsiveness and audio stability.
+9. Test duplicated sound things sharing one source alongside sound things using different sources; playback and independent settings work together.
 
 Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, live MIDI keyboard input, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
 
@@ -299,16 +300,17 @@ After this foundation is verified, those broader features can be developed witho
 
 The roadmap is ordered by dependency: validate the current foundation, make sound things behave as instruments, then add shared timing and more advanced production capabilities. These are planned stages, not claims that the features already exist. Revisit priorities as real use reveals what matters most.
 
-### Stage 1 — Finish validating the current foundation
+### Stage 1 — Validate the current foundation
 
-- **User-confirmed:** save a `.soundthing` project, then open it in the same browser and confirm the workspace, settings, and audio assets are restored.
-- **User-confirmed:** open the project file in a separate Chrome profile with independent browser storage; the workspace, settings, and audio restore successfully. Opening it on another device remains untested.
+<badge>PASS — user tested</badge>
+
+- Save a `.soundthing` project, then open it in the same browser and confirm the workspace, settings, and audio assets are restored.
+- Open the project file in a separate Chrome profile with independent browser storage; the workspace, settings, and audio restore successfully.
 - Move or rename the original external audio file and confirm the managed import remains playable.
-- Test three to five simultaneous sound things.
-- Test both duplicated sound things sharing one source and sound things using different sources.
-- Observe audio stability, responsiveness, and whether playback controls remain independent.
+- Test three to five simultaneous sound things; playback remains responsive and stable.
+- Test duplicated sound things sharing one source alongside sound things using different sources; concurrent playback works and settings remain independent.
 
-Do not expand the feature set until these basic source-management and playback checks have been completed.
+These foundation checks are complete in the user's tested browser environment. Cross-device portability has not yet been tested.
 
 ### Stage 2 — Strengthen the audio foundation
 
