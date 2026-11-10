@@ -27,6 +27,7 @@ import {
   type AudioSourceRecord,
   type StoredSoundThing,
 } from "./storage/workspace";
+import { createProjectFile, readProjectFile } from "./storage/projectFile";
 
 type SoundThingData = {
   sourceId: string;
@@ -127,6 +128,7 @@ function Canvas() {
   const [message, setMessage] = useState("Drop an audio file anywhere on the canvas to create a sound thing.");
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const projectInput = useRef<HTMLInputElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const updateSettings = useCallback((id: string, settings: Partial<PlaybackSettings>) => {
@@ -276,25 +278,72 @@ function Canvas() {
     return () => { cancelled = true; };
   }, [makeNode, setNodes]);
 
-  const persist = useCallback(async () => {
+  const getStoredSoundThings = useCallback((): StoredSoundThing[] => nodes.map((node) => ({
+    id: node.id,
+    sourceId: node.data.sourceId,
+    sourceName: node.data.sourceName,
+    duration: node.data.duration,
+    waveform: node.data.waveform,
+    position: node.position,
+    playbackRate: node.data.playbackRate,
+    volumeDb: node.data.volumeDb,
+    loop: node.data.loop,
+  })), [nodes]);
+
+  const saveProject = useCallback(async () => {
     try {
-      const stored: StoredSoundThing[] = nodes.map((node) => ({
-        id: node.id,
-        sourceId: node.data.sourceId,
-        sourceName: node.data.sourceName,
-        duration: node.data.duration,
-        waveform: node.data.waveform,
-        position: node.position,
-        playbackRate: node.data.playbackRate,
-        volumeDb: node.data.volumeDb,
-        loop: node.data.loop,
-      }));
+      const stored = getStoredSoundThings();
       await saveWorkspace(stored);
-      setMessage(`Saved ${stored.length} sound thing(s) in this browser.`);
+      const sources = await loadAudioSources();
+      const project = await createProjectFile(stored, sources);
+      const url = URL.createObjectURL(project);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `soundthing-${new Date().toISOString().replace(/[:.]/g, "-")}.soundthing`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage(`Saved and downloaded a project containing ${stored.length} sound thing(s).`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Workspace could not be saved.");
+      setMessage(error instanceof Error ? error.message : "Project could not be saved.");
     }
-  }, [nodes]);
+  }, [getStoredSoundThings]);
+
+  const openProject = useCallback(async (file: File) => {
+    setBusy(true);
+    try {
+      const project = await readProjectFile(file);
+      const sourceIdMap = new Map<string, string>();
+      const importedSources: AudioSourceRecord[] = [];
+
+      for (const source of project.audioSources) {
+        const newId = crypto.randomUUID();
+        const decoded = await registerAudioSource(newId, source.blob);
+        sourceIdMap.set(source.id, newId);
+        importedSources.push({
+          ...source,
+          id: newId,
+          duration: decoded.duration,
+          waveform: decoded.waveform,
+        });
+      }
+
+      for (const source of importedSources) await storeAudioSource(source);
+
+      const importedThings = project.soundThings.map((thing) => ({
+        ...thing,
+        sourceId: sourceIdMap.get(thing.sourceId)!,
+      }));
+      await saveWorkspace(importedThings);
+      setNodes(importedThings.map(makeNode));
+      setMessage(`Opened ${file.name}: ${importedThings.length} sound thing(s) and ${importedSources.length} audio source(s).`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Project could not be opened.");
+    } finally {
+      setBusy(false);
+    }
+  }, [makeNode, setNodes]);
 
   const onDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -314,9 +363,21 @@ function Canvas() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-symbol">s</span>
-          <div><strong>soundThing</strong><small>playable canvas · prototype 0.1.0</small></div>
+          <div><strong>soundThing</strong><small>playable canvas · prototype 0.3.0</small></div>
         </div>
         <div className="toolbar">
+          <button className="toolbar-button" onClick={() => projectInput.current?.click()}>Open project</button>
+          <input
+            ref={projectInput}
+            className="hidden-input"
+            type="file"
+            accept=".soundthing,.zip,application/zip"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void openProject(file);
+              event.target.value = "";
+            }}
+          />
           <button className="toolbar-button" onClick={openPicker}>＋ Import audio</button>
           <input
             ref={fileInput}
@@ -331,7 +392,7 @@ function Canvas() {
               }
             }}
           />
-          <button className="toolbar-button primary" onClick={() => void persist()}>Save workspace</button>
+          <button className="toolbar-button primary" onClick={() => void saveProject()}>Save project</button>
         </div>
       </header>
 
@@ -365,7 +426,7 @@ function Canvas() {
       </section>
       <footer className="statusbar">
         <span>{nodes.length} sound thing{nodes.length === 1 ? "" : "s"}</span>
-        <span>Sources are stored locally in this browser</span>
+        <span>Projects download as portable .soundthing files</span>
         <span>Web Audio · Tone.js · React Flow</span>
       </footer>
     </main>
