@@ -1,5 +1,9 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import type { AudioSourceRecord, StoredSoundThing } from "./workspace";
+import {
+  normalizeStoredSoundThing,
+  type AudioSourceRecord,
+  type StoredSoundThing,
+} from "./workspace";
 
 const PROJECT_FORMAT = "soundthing-project";
 const PROJECT_VERSION = 1;
@@ -35,6 +39,7 @@ function validateSoundThings(value: unknown): StoredSoundThing[] {
       typeof item.sourceId !== "string" ||
       typeof item.sourceName !== "string" ||
       typeof item.duration !== "number" ||
+      !Number.isFinite(item.duration) ||
       !Array.isArray(item.waveform) ||
       !isRecord(item.position) ||
       typeof item.position.x !== "number" ||
@@ -42,11 +47,22 @@ function validateSoundThings(value: unknown): StoredSoundThing[] {
       typeof item.playbackRate !== "number" ||
       typeof item.volumeDb !== "number" ||
       typeof item.loop !== "boolean" ||
-      !item.waveform.every((point) => typeof point === "number" && Number.isFinite(point))) {
+      !item.waveform.every((point) => typeof point === "number" && Number.isFinite(point)) ||
+      ["sampleStart", "sampleEnd", "loopStart", "loopEnd"].some(
+        (key) => item[key] !== undefined && (typeof item[key] !== "number" || !Number.isFinite(item[key])),
+      )) {
       throw new Error(`Sound thing ${index + 1} in this project is invalid.`);
     }
 
-    return item as unknown as StoredSoundThing;
+    const legacyCompatible = {
+      ...item,
+      sampleStart: typeof item.sampleStart === "number" ? item.sampleStart : 0,
+      sampleEnd: typeof item.sampleEnd === "number" ? item.sampleEnd : item.duration,
+      loopStart: typeof item.loopStart === "number" ? item.loopStart : 0,
+      loopEnd: typeof item.loopEnd === "number" ? item.loopEnd : item.duration,
+    } as unknown as StoredSoundThing;
+
+    return normalizeStoredSoundThing(legacyCompatible);
   });
 }
 
@@ -84,7 +100,7 @@ export async function createProjectFile(
     format: PROJECT_FORMAT,
     version: PROJECT_VERSION,
     createdAt: new Date().toISOString(),
-    soundThings,
+    soundThings: soundThings.map((thing) => normalizeStoredSoundThing(thing)),
     audioSources,
   };
 
