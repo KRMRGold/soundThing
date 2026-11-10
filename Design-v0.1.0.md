@@ -1,4 +1,4 @@
-# Soundthing: Initial Design v0.1.3
+# Soundthing: Initial Design v0.1.4
 
 - **Artifact:** Initial design
 - **Version:** 0.1.4
