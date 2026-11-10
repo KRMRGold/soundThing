@@ -79,9 +79,9 @@ function currentPosition(active: ActivePlayer): number {
   const { settings } = active;
   const elapsed = Math.max(0, (Tone.now() - active.startedAt) * settings.playbackRate);
   let position = active.startOffset + elapsed;
-  if (settings.loop && position >= settings.loopEnd) {
-    const loopLength = settings.loopEnd - settings.loopStart;
-    position = settings.loopStart + ((position - settings.loopEnd) % loopLength);
+  if (settings.loop && position >= settings.sampleEnd) {
+    const loopLength = settings.sampleEnd - settings.sampleStart;
+    position = settings.sampleStart + ((position - settings.sampleEnd) % loopLength);
   }
   return Math.min(position, settings.sampleEnd);
 }
@@ -97,7 +97,7 @@ function createActivePlayer(
   player.playbackRate = settings.playbackRate;
   player.volume.value = settings.volumeDb;
   player.loop = settings.loop;
-  player.setLoopPoints(settings.loopStart, settings.loopEnd);
+  player.setLoopPoints(settings.sampleStart, settings.sampleEnd);
 
   const active: ActivePlayer = {
     player,
@@ -145,8 +145,8 @@ export async function playSoundThing(
   let offset = pausedOffsets.get(soundThingId) ?? config.sampleStart;
   pausedOffsets.delete(soundThingId);
   if (offset < config.sampleStart || offset >= config.sampleEnd) offset = config.sampleStart;
-  if (config.loop && offset >= config.loopEnd) {
-    offset = config.loopStart + ((offset - config.loopEnd) % (config.loopEnd - config.loopStart));
+  if (config.loop && offset >= config.sampleEnd) {
+    offset = config.sampleStart + ((offset - config.sampleEnd) % (config.sampleEnd - config.sampleStart));
   }
 
   createActivePlayer(soundThingId, buffer, config, offset, onStop);
@@ -207,8 +207,8 @@ export function updateSoundThingSettings(
     active.player.onstop = () => undefined;
     active.player.stop();
     active.player.dispose();
-    const restartOffset = nextSettings.loop && position >= nextSettings.loopEnd
-      ? nextSettings.loopStart + ((position - nextSettings.loopEnd) % (nextSettings.loopEnd - nextSettings.loopStart))
+    const restartOffset = nextSettings.loop && position >= nextSettings.sampleEnd
+      ? nextSettings.sampleStart + ((position - nextSettings.sampleEnd) % (nextSettings.sampleEnd - nextSettings.sampleStart))
       : position;
     createActivePlayer(soundThingId, active.buffer, nextSettings, restartOffset, active.onStop);
     return;
@@ -218,8 +218,8 @@ export function updateSoundThingSettings(
   active.startedAt = Tone.now();
   active.settings = nextSettings;
   active.player.volume.value = nextSettings.volumeDb;
-  active.player.loopStart = nextSettings.loopStart;
-  active.player.loopEnd = nextSettings.loopEnd;
+  active.player.loopStart = nextSettings.sampleStart;
+  active.player.loopEnd = nextSettings.sampleEnd;
 }
 
 export function disposeAudioEngine(): void {
