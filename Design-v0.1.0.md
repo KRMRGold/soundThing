@@ -1,0 +1,249 @@
+# Soundthing: Initial Design v0.1.0
+
+- **Artifact:** Initial design
+- **Version:** 0.1.0
+- **Status:** Initial design candidate, not an implementation specification
+- **Development workflow:** [Development State Machine Workflow v1.3.0](../../DevelopmentWorkflow/Development-State-Machine-Workflow-v1.3.0.md)
+- **Workflow adoption:** Soundthing adopts the reusable Development State Machine Workflow v1.3.0. The workflow remains a separate reusable component; this document describes Soundthing and how the workflow applies to it.
+
+## 1. Vision
+
+Soundthing is an instrument-centered music creation environment built around an infinite spatial canvas rather than a conventional timeline-first DAW.
+
+Sound things are self-contained, playable sound objects that users can arrange, manipulate, and play together. Each can have its own playback behavior, controls, and optional processing.
+
+The goal is not to recreate an existing DAW feature for feature. Soundthing draws inspiration from samplers, live looping, DJ equipment, modular workflows, and established DAWs while exploring a more direct, spatial way to create music.
+
+## 2. Workstation and Infinite Canvas
+
+- The canvas is the primary workspace.
+- Sound things can be positioned and played independently, including simultaneously.
+- The interface should show what the user is playing and how it behaves.
+- Related sound things remain visually independent by default.
+- Users can inspect relationships and navigate between related objects when needed.
+- Workstation-level controls can coordinate multiple sound things without eliminating their individual settings.
+
+The canvas should support musical interaction, not simply serve as a place to arrange visual representations of tracks.
+
+## 3. Sound Things
+
+A sound thing is a playable sound object with its own configuration and behavior.
+
+Examples include a looping sample, a sample played as a pitched instrument through MIDI, a sliced sample mapped to drum pads, a waveform-based instrument, or a recorded/live-looped sound.
+
+These are different ways of using sound, not necessarily separate foundational instrument types.
+
+Sound things may reference the same underlying audio while maintaining independent playback settings and configurations.
+
+## 4. Sampler as a Foundation
+
+The sampler is the initial foundation for loading, recording, and manipulating audio.
+
+A sound source can be used in different ways:
+- Normal sample playback and looping.
+- Pitched playback controlled by MIDI.
+- Slicing and triggering individual regions.
+- Mapping slices to a drum rack.
+- Using waveform data as the basis of an instrument.
+
+These are standard playback and manipulation capabilities. Optional effects, plugins, and specialized processing can extend them.
+
+The initial design should establish a useful sampler foundation before expanding into more complex instrument types.
+
+## 5. Transformations and Independent Objects
+
+Transforming a sample into a different instrument or workflow can create a new sound thing.
+
+For example, sending a sample to a drum rack creates a separate object whose pads can be edited independently. The original sample remains available.
+
+A new sound thing does not necessarily require duplicating the audio file. Multiple objects can reference the same source while maintaining separate settings.
+
+The system should distinguish between:
+- Creating a new sound thing.
+- Creating a new audio file or copy.
+- Editing the original audio.
+- Editing an object's playback or processing configuration.
+
+Potentially destructive transformations should default to preserving the original. Users should eventually be able to choose whether an action creates a new object, modifies the existing object, or asks each time.
+
+## 6. Slicing and Drum Racks
+
+A sample can be sliced and sent to a drum rack.
+
+- The drum rack becomes a separate sound thing.
+- Slices become individually playable pads or triggers.
+- Each pad can be configured independently.
+- The original sample remains available.
+- Slice regions should ideally reference the original audio rather than require destructive cutting or unnecessary duplication.
+
+The precise relationship between source audio, slice definitions, and later edits remains an implementation decision.
+
+## 7. Optional Effects and Plugins
+
+Effects such as reverb, delay, and distortion are optional additions rather than mandatory parts of every sound thing.
+
+Effects may appear as visible modules attached to a sound thing, potentially beneath it on the canvas or in an expanded view.
+
+Third-party plugin support, including VST compatibility, is a possible future capability. Its feasibility depends on the selected runtime and audio architecture, so it is not an established requirement for the first prototype.
+
+## 8. Relationships and Provenance
+
+Sound things should appear independent on the canvas unless the user chooses to inspect their relationships.
+
+Relationship information belongs primarily in metadata. It can record:
+- The original sound source.
+- The transformation that created an object.
+- Relevant creation settings.
+- Whether the source is still available.
+- A way to navigate to the original object.
+
+This provenance information should help users understand where a sound came from without cluttering the canvas with permanent connection lines.
+
+A relationship does not automatically imply that settings or edits propagate between objects.
+
+## 9. Playback, Tempo, and Synchronization
+
+Individual sound things may have their own tempo and playback settings.
+
+The workstation may provide global controls such as master play/stop, a master tempo control, and synchronization controls for bringing selected sound things into rhythmic alignment.
+
+The original setting should remain distinguishable from the current or synchronized setting. For example, a tempo knob may move to reflect synchronization while a marker preserves the original tempo.
+
+The design should distinguish between:
+- **Original setting:** the object's stored preference or starting point.
+- **Current control setting:** the value currently shown by its control.
+- **Effective playback setting:** the value actually used during playback.
+
+Synchronization must account for more than matching BPM. Loop length, start position, rhythmic phase, and playback behavior may also affect alignment.
+
+The exact relationship between master tempo, master synchronization, and individual controls remains open for further design.
+
+## 10. Proposed Technology Stack
+
+This is a candidate stack for investigation, not an approved implementation commitment.
+
+### Audio engine
+
+- **Web Audio API:** the native browser audio platform and starting candidate for sample playback, routing, effects, and real-time processing.
+- **Tone.js:** evaluate for musical scheduling, tempo-aware playback, transport controls, and common music-making primitives. Use it where it simplifies implementation without constraining Soundthing's interaction model.
+- **AudioWorklet:** investigate for custom real-time audio processing when a defined requirement calls for it, rather than assuming it is needed everywhere.
+
+### Interface
+
+- **TypeScript:** a candidate for maintaining clear interfaces between sound things, configurations, canvas interactions, and the audio engine.
+- **React:** a candidate for the interface and reusable controls.
+- **Custom infinite canvas:** the spatial workspace is central to Soundthing's identity. Its interaction model should support moving, selecting, inspecting, and playing sound things, rather than treating it as a conventional timeline. The rendering technology remains open until behavior and performance needs are clearer.
+
+### Desktop packaging
+
+- **Tauri:** a candidate for packaging the web-first application as a desktop app. Browser-based development should remain viable where practical.
+- Desktop packaging should not dictate the initial architecture before its benefits and constraints have been evaluated.
+
+### Storage and audio assets
+
+The architecture needs to distinguish audio data from sound thing configurations. A configuration may include its source reference, playback method, slice regions, controls, and processing chain. Multiple objects should be able to reference shared audio without unintentionally sharing all settings.
+
+The specific storage system, audio import workflow, recording format, and persistence strategy remain to be investigated.
+
+### Stack decision principles
+
+- Prefer established audio technologies where they meet the requirements.
+- Build custom functionality where Soundthing's interaction model genuinely requires it.
+- Keep the audio engine conceptually separate from the interface.
+- Avoid committing to libraries before validating their limitations.
+- Evaluate real-time performance, synchronization accuracy, browser support, and desktop requirements.
+- Introduce dependencies only when they solve a defined problem.
+
+### Technical validation questions
+
+1. Do the candidate audio libraries support the required playback and synchronization behaviors?
+2. How can multiple independent sound things play simultaneously without timing drift or unnecessary resource use?
+3. How should shared audio sources and independently editable configurations be represented?
+4. Which canvas rendering approach best supports the expected number of sound things?
+5. What is required for reliable recording, persistence, and audio asset management?
+6. Which plugin formats, if any, are practical in the browser, desktop wrapper, or both?
+
+## 11. Development State Machine Workflow
+
+Soundthing adopts the [Development State Machine Workflow v1.3.0](../../DevelopmentWorkflow/Development-State-Machine-Workflow-v1.3.0.md). The workflow governs how ideas become requirements, how requirements become implementation candidates, and how candidates are verified before acceptance. It remains a separate reusable component.
+
+### Development stages
+
+1. **Initial design:** Capture the vision, core concepts, constraints, and open questions. Distinguish decisions from proposals and assumptions.
+2. **Refinement:** Resolve meaningful ambiguities, investigate existing solutions, compare alternatives, and improve the design without prematurely locking implementation details.
+3. **Approval and acceptance criteria:** Define the proposed scope and observable evidence of success. The user retains authority over design decisions and approval.
+4. **Versioned implementation candidate:** Define a bounded change and create an identifiable candidate that can be reviewed and tested. Keep the prior accepted baseline recoverable.
+5. **Source inspection:** Inspect the repository, architecture, relevant modules, and development instructions before changing code. Reuse existing infrastructure where appropriate.
+6. **Runtime and acceptance testing:** Test actual behavior against the agreed criteria. For audio features, this may include playback, synchronization, object independence, persistence, and interaction tests.
+7. **Acceptance gate:** Evaluate evidence against the acceptance criteria. Code is not accepted merely because it was written or looks correct.
+8. **Repair and iteration:** Preserve failed candidates and evidence. Diagnose whether the issue is in the design, implementation, or test assumptions; create a new candidate version and retest.
+9. **Maintenance update:** After acceptance, record the accepted code version, source reference, test evidence, differences from the design, and known limitations. Version the maintenance document independently.
+10. **Next decision:** Choose the next bounded change or decide whether the desired scope is complete.
+11. **Milestone document:** When the user declares the app complete to the desired scope, reconcile the initial design, latest maintenance record, and accepted code into an independently versioned milestone reference.
+
+### Applying the workflow to Soundthing
+
+A small interface experiment does not need the same scope as a new audio engine, but each change should have a clear purpose and observable evaluation criteria.
+
+An initial prototype could test whether a user can:
+1. Load a sample.
+2. Place it on the canvas as a sound thing.
+3. Play and stop it.
+4. Create a second sound thing that references the same source.
+5. Change the second object's playback settings without unintentionally changing the first.
+
+This tests a meaningful part of Soundthing's architecture without requiring the full sampler, drum rack, plugin system, and synchronization engine at once.
+
+Acceptance criteria should be agreed before the implementation candidate is treated as ready for evaluation.
+
+### Workflow principles
+
+- Inspect the relevant repository and instructions before implementation.
+- Investigate existing solutions before building custom infrastructure.
+- Keep proposals, approved decisions, and unverified assumptions distinguishable.
+- Define observable acceptance criteria.
+- Never claim tests passed unless they were actually run.
+- Preserve user authority over consequential design choices.
+- Keep implementation changes bounded and traceable.
+- Update project documentation and maintenance records at the appropriate workflow stage.
+- Use prototype results to inform later decisions rather than treating early assumptions as permanent architecture.
+
+## 12. Design Principles
+
+- **Instrument-centered:** Sound things are playable objects, not merely clips on a timeline.
+- **Spatial:** The canvas is an active workspace for making music.
+- **Independent by default:** Related objects do not unexpectedly share behavior or edits.
+- **Non-destructive where practical:** Transformations preserve source material unless the user chooses otherwise.
+- **Inspectable:** Users can discover how an object works and where it came from.
+- **Extensible:** Optional effects and new playback capabilities can be added without making every object needlessly complex.
+- **Progressive:** Begin with a useful core and expand as real needs emerge.
+- **Validated:** Architecture and implementation choices are tested against the intended musical experience.
+
+## 13. Initial Scope
+
+The first prototype should validate the core interaction model, not attempt to reproduce a complete DAW.
+
+A reasonable starting slice is:
+- An infinite or sufficiently large spatial canvas.
+- A basic sound thing that can load and play a sample.
+- Independent playback controls.
+- A second object that can reference the same audio source while maintaining separate settings.
+- A clear way to inspect an object's source relationship.
+- Basic persistence sufficient to validate the workflow.
+
+After that foundation works, slicing, MIDI-style pitched playback, drum racks, effects, and workstation-wide synchronization can be developed as separate, testable capabilities.
+
+## 14. Open Design Questions
+
+- What are the primary gestures for creating, moving, opening, and playing sound things?
+- How should playback modes be presented and changed?
+- How should shared audio sources behave when the original is edited or removed?
+- What is the preferred default for creating new objects versus modifying existing ones?
+- How should slicing and drum rack configuration be represented?
+- How should master tempo and synchronization interact with individual sound thing controls?
+- Which audio and canvas libraries meet the requirements in practice?
+- What is the minimum viable recording and persistence workflow?
+- Which desktop-specific capabilities justify packaging the web application?
+- Which plugin formats, if any, are practical to support?
+
+This is an initial design candidate, not a final technical specification. Stack choices remain provisional until requirements and prototypes have been evaluated.
