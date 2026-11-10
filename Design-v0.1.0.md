@@ -10,20 +10,23 @@
 
 Soundthing is an instrument-centered music creation environment built around an infinite spatial canvas rather than a conventional timeline-first DAW.
 
-Sound things are self-contained, playable sound objects that users can arrange, manipulate, and play together. Each can have its own playback behavior, controls, and optional processing.
+Sound things are self-contained, independently playable musical objects. Each sound thing is its own instrument or sound-making unit, with its own playback behavior, controls, and optional processing. Users can play them individually or in combination.
+
+The canvas is the shared spatial workspace where sound things live. It provides a place to create, arrange, select, inspect, and interact with them; it is not itself the instrument, and it is not a conventional timeline. A sound thing remains an independent playable object wherever it is positioned on the canvas.
 
 The goal is not to recreate an existing DAW feature for feature. Soundthing draws inspiration from samplers, live looping, DJ equipment, modular workflows, and established DAWs while exploring a more direct, spatial way to create music.
 
 ## 2. Workstation and Infinite Canvas
 
-- The canvas is the primary workspace.
-- Sound things can be positioned and played independently, including simultaneously.
-- The interface should show what the user is playing and how it behaves.
-- Related sound things remain visually independent by default.
-- Users can inspect relationships and navigate between related objects when needed.
-- Workstation-level controls can coordinate multiple sound things without eliminating their individual settings.
+- The canvas is the shared spatial workspace in which sound things live.
+- Each sound thing is an independent, playable entity with its own controls and playback behavior.
+- A sound thing can be played, stopped, and configured on its own, and multiple sound things can play simultaneously.
+- The canvas provides the context for creating, arranging, selecting, inspecting, and accessing sound things.
+- Moving or arranging a sound thing on the canvas does not, by itself, change its musical behavior.
+- Related sound things remain visually independent by default; users can inspect relationships and navigate between related objects when needed.
+- Workstation-level controls may coordinate multiple sound things without replacing their individual controls or settings.
 
-The canvas should support musical interaction, not simply serve as a place to arrange visual representations of tracks.
+The canvas is not a timeline and is not itself the instrument. Musical sound is produced by the sound things; the canvas is the spatial environment that holds and organizes them.
 
 ## 3. Sound Things
 
