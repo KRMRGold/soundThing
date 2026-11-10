@@ -270,7 +270,7 @@ A first implementation candidate now exists in the repository. It includes:
 - IndexedDB storage for imported audio blobs and the browser's current workspace.
 - Portable `.soundthing` project files: **Save project** downloads a versioned archive containing the workspace and its referenced audio assets; **Open project** imports the archive and restores the workspace.
 
-**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and IndexedDB workspace save/restore. The portable project archive feature is implemented in candidate 0.3.0, but browser download, re-import, and cross-browser portability have not yet been tested.
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and IndexedDB workspace save/restore. Candidate 0.3.0 adds portable project archive save/open; its TypeScript check and Vite production build passed in GitHub Actions for commit `30292c3e1931906addb8e274dae7f3307f867b04` (run [42763305503](https://github.com/KRMRGold/soundThing/actions/runs/42763305503)). Browser download, re-import, and cross-browser portability remain untested.
 
 ### First-milestone acceptance checks
 
