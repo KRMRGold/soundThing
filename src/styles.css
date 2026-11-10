@@ -96,10 +96,11 @@ button { cursor: pointer; }
   height: 29px; flex: 0 0 29px; display: flex; justify-content: space-between; align-items: center;
   padding: 0 15px; color: #8d8379; border-top: 1px solid #2b2723; background: #171513; font-size: 9px;
 }
-.react-flow__controls { border: 1px solid #40372f; box-shadow: none; overflow: hidden; }
-.react-flow__controls-button { background: #24201d; fill: #d7c6b5; border-bottom-color: #40372f; }
-.react-flow__controls-button:hover { background: #393029; }
-.react-flow__minimap { background: #211d19; border: 1px solid #40372f; }
+.react-flow__controls { border: 1px solid #514338; border-radius: 8px; background: #28221d; box-shadow: 0 5px 18px rgba(0,0,0,.28); overflow: hidden; }
+.react-flow__controls-button { background-color: #302820 !important; color: #e9dfd5; fill: #e9dfd5; border-bottom: 1px solid #514338; }
+.react-flow__controls-button:hover { background-color: #49382b !important; }
+.react-flow__minimap { background-color: #28221d !important; border: 1px solid #514338; border-radius: 8px; }
+.react-flow__selection { background: rgba(201, 154, 117, .16); border: 1px solid rgba(217, 173, 137, .9); }
 .react-flow__node { border-radius: 11px; }
 .react-flow__node.selected .sound-thing { border-color: #c99a75; box-shadow: 0 0 0 1px #c99a75, 0 12px 35px rgba(0,0,0,.3); }
 
