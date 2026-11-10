@@ -35,10 +35,11 @@ export function normalizePlaybackSettings(
   settings: Partial<PlaybackSettings>,
   duration: number,
 ): PlaybackSettings {
-  const sampleStart = Math.min(Math.max(settings.sampleStart ?? 0, 0), duration);
-  const sampleEnd = Math.min(Math.max(settings.sampleEnd ?? duration, sampleStart + 0.01), duration);
-  const loopStart = Math.min(Math.max(settings.loopStart ?? sampleStart, sampleStart), sampleEnd - 0.01);
-  const loopEnd = Math.min(Math.max(settings.loopEnd ?? sampleEnd, loopStart + 0.01), sampleEnd);
+  const minimumRegion = Math.min(0.01, duration);
+  const sampleStart = Math.min(Math.max(settings.sampleStart ?? 0, 0), duration - minimumRegion);
+  const sampleEnd = Math.min(Math.max(settings.sampleEnd ?? duration, sampleStart + minimumRegion), duration);
+  const loopStart = Math.min(Math.max(settings.loopStart ?? sampleStart, sampleStart), sampleEnd - minimumRegion);
+  const loopEnd = Math.min(Math.max(settings.loopEnd ?? sampleEnd, loopStart + minimumRegion), sampleEnd);
 
   return {
     playbackRate: Math.min(Math.max(settings.playbackRate ?? 1, 0.05), 4),
@@ -142,7 +143,7 @@ export async function playSoundThing(
 
   players.set(soundThingId, active);
   if (config.loop) player.start(undefined, offset);
-  else player.start(undefined, offset, config.sampleEnd - offset);
+  else player.start(undefined, offset, (config.sampleEnd - offset) / config.playbackRate);
 }
 
 export function pauseSoundThing(soundThingId: string): boolean {
