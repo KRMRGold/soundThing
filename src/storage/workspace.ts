@@ -1,5 +1,3 @@
-import type { PlaybackSettings } from "../audio/engine";
-
 const DATABASE_NAME = "soundthing-workspace";
 const DATABASE_VERSION = 1;
 const SOURCE_STORE = "audio-sources";
