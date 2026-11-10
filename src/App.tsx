@@ -12,6 +12,7 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
+  normalizePlaybackSettings,
   pauseSoundThing,
   playSoundThing,
   registerAudioSource,
@@ -19,9 +20,11 @@ import {
   updateSoundThingSettings,
   type PlaybackSettings,
 } from "./audio/engine";
+import SamplerWaveform from "./components/SamplerWaveform";
 import {
   loadAudioSources,
   loadWorkspace,
+  normalizeStoredSoundThing,
   saveWorkspace,
   storeAudioSource,
   type AudioSourceRecord,
@@ -29,14 +32,11 @@ import {
 } from "./storage/workspace";
 import { createProjectFile, readProjectFile } from "./storage/projectFile";
 
-type SoundThingData = {
+type SoundThingData = PlaybackSettings & {
   sourceId: string;
   sourceName: string;
   duration: number;
   waveform: number[];
-  playbackRate: number;
-  volumeDb: number;
-  loop: boolean;
   playing: boolean;
   paused: boolean;
   onPlay: (id: string, sourceId: string, settings: PlaybackSettings) => void;
@@ -55,41 +55,131 @@ function formatTime(seconds: number): string {
   return minutes + ":" + remainder;
 }
 
+function formatSampleTime(seconds: number): string {
+  return `${Math.max(0, seconds).toFixed(2)}s`;
+}
+
 function SoundThing({ id, data }: NodeProps<SoundThingNode>) {
+  const updateRegion = (region: { sampleStart: number; sampleEnd: number }) => {
+    const minimum = Math.min(0.01, data.duration);
+    const loopStart = Math.min(Math.max(data.loopStart, region.sampleStart), region.sampleEnd - minimum);
+    const loopEnd = Math.min(Math.max(data.loopEnd, loopStart + minimum), region.sampleEnd);
+    data.onSettingsChange(id, {
+      ...region,
+      loopStart,
+      loopEnd,
+    });
+  };
+
   return (
     <article className="sound-thing">
       <div className="sound-thing-top">
         <span className="object-mark">S</span>
         <div className="sound-thing-heading">
           <strong>{data.sourceName}</strong>
-          <small>{formatTime(data.duration)} · shared source</small>
+          <small>{formatSampleTime(data.sampleEnd - data.sampleStart)} selected · {formatTime(data.duration)} source</small>
         </div>
         <button className="icon-button nodrag" title="Create another sound thing" onClick={() => data.onDuplicate(id)}>
           +
         </button>
       </div>
 
-      <div className="waveform" aria-label="Audio waveform">
-        {data.waveform.map((height, index) => (
-          <span key={index} style={{ height: `${Math.max(7, height * 100)}%` }} />
-        ))}
+      <SamplerWaveform
+        waveform={data.waveform}
+        duration={data.duration}
+        sampleStart={data.sampleStart}
+        sampleEnd={data.sampleEnd}
+        onRegionChange={updateRegion}
+      />
+
+      <div className="sampler-readout nodrag">
+        <span>IN {formatSampleTime(data.sampleStart)}</span>
+        <span>OUT {formatSampleTime(data.sampleEnd)}</span>
+        <span>LENGTH {formatSampleTime(data.sampleEnd - data.sampleStart)}</span>
       </div>
 
-      <div className="transport nodrag">
+      <div className="setting-row nodrag region-setting">
+        <label htmlFor={`start-${id}`}>Start</label>
+        <input
+          id={`start-${id}`}
+          type="range"
+          min="0"
+          max={data.duration}
+          step="0.01"
+          value={data.sampleStart}
+          onChange={(event) => updateRegion({
+            sampleStart: Math.min(Number(event.target.value), data.sampleEnd - Math.min(0.01, data.duration)),
+            sampleEnd: data.sampleEnd,
+          })}
+        />
+        <output>{formatSampleTime(data.sampleStart)}</output>
+      </div>
+      <div className="setting-row nodrag region-setting">
+        <label htmlFor={`end-${id}`}>End</label>
+        <input
+          id={`end-${id}`}
+          type="range"
+          min="0"
+          max={data.duration}
+          step="0.01"
+          value={data.sampleEnd}
+          onChange={(event) => updateRegion({
+            sampleStart: data.sampleStart,
+            sampleEnd: Math.max(Number(event.target.value), data.sampleStart + Math.min(0.01, data.duration)),
+          })}
+        />
+        <output>{formatSampleTime(data.sampleEnd)}</output>
+      </div>
+
+      <div className="transport nodrag sampler-transport">
         <button className={data.playing ? "transport-button active" : "transport-button"} onClick={() => data.playing ? data.onPause(id) : data.onPlay(id, data.sourceId, data)}>
           {data.playing ? "Pause" : data.paused ? "Resume" : "Play"}
         </button>
         <button className="stop-button" disabled={!data.playing && !data.paused} onClick={() => data.onStop(id)}>Stop</button>
-        <label className="loop-toggle">
-          <input
-            type="checkbox"
-            checked={data.loop}
-            onChange={(event) => data.onSettingsChange(id, { loop: event.target.checked })}
-          />
-          Loop
+        <label className="mode-control">
+          <span>Mode</span>
+          <select value={data.loop ? "loop" : "one-shot"} onChange={(event) => data.onSettingsChange(id, { loop: event.target.value === "loop" })}>
+            <option value="one-shot">One-Shot</option>
+            <option value="loop">Loop</option>
+          </select>
         </label>
-        <span className="duration">{formatTime(data.duration)}</span>
       </div>
+
+      {data.loop && (
+        <div className="loop-settings nodrag">
+          <div className="loop-heading">LOOP REGION</div>
+          <div className="setting-row">
+            <label htmlFor={`loop-start-${id}`}>Loop in</label>
+            <input
+              id={`loop-start-${id}`}
+              type="range"
+              min={data.sampleStart}
+              max={data.sampleEnd - Math.min(0.01, data.duration)}
+              step="0.01"
+              value={data.loopStart}
+              onChange={(event) => data.onSettingsChange(id, {
+                loopStart: Math.min(Number(event.target.value), data.loopEnd - Math.min(0.01, data.duration)),
+              })}
+            />
+            <output>{formatSampleTime(data.loopStart)}</output>
+          </div>
+          <div className="setting-row">
+            <label htmlFor={`loop-end-${id}`}>Loop out</label>
+            <input
+              id={`loop-end-${id}`}
+              type="range"
+              min={data.sampleStart + Math.min(0.01, data.duration)}
+              max={data.sampleEnd}
+              step="0.01"
+              value={data.loopEnd}
+              onChange={(event) => data.onSettingsChange(id, {
+                loopEnd: Math.max(Number(event.target.value), data.loopStart + Math.min(0.01, data.duration)),
+              })}
+            />
+            <output>{formatSampleTime(data.loopEnd)}</output>
+          </div>
+        </div>
+      )}
 
       <div className="setting-row nodrag">
         <label htmlFor={`rate-${id}`}>Rate</label>
@@ -192,27 +282,29 @@ function Canvas() {
     setMessage("Created an independent sound thing using the same audio source.");
   }, [setNodes]);
 
-  const makeNode = useCallback((stored: StoredSoundThing): SoundThingNode => ({
-    id: stored.id,
-    type: "soundThing",
-    position: stored.position,
-    data: {
-      sourceId: stored.sourceId,
-      sourceName: stored.sourceName,
-      duration: stored.duration,
-      waveform: stored.waveform,
-      playbackRate: stored.playbackRate,
-      volumeDb: stored.volumeDb,
-      loop: stored.loop,
-      playing: false,
-      paused: false,
-      onPlay: play,
-      onPause: pause,
-      onStop: stop,
-      onDuplicate: duplicate,
-      onSettingsChange: updateSettings,
-    },
-  }), [duplicate, pause, play, stop, updateSettings]);
+  const makeNode = useCallback((stored: StoredSoundThing): SoundThingNode => {
+    const normalized = normalizeStoredSoundThing(stored);
+    const settings = normalizePlaybackSettings(normalized, normalized.duration);
+    return {
+      id: normalized.id,
+      type: "soundThing",
+      position: normalized.position,
+      data: {
+        sourceId: normalized.sourceId,
+        sourceName: normalized.sourceName,
+        duration: normalized.duration,
+        waveform: normalized.waveform,
+        ...settings,
+        playing: false,
+        paused: false,
+        onPlay: play,
+        onPause: pause,
+        onStop: stop,
+        onDuplicate: duplicate,
+        onSettingsChange: updateSettings,
+      },
+    };
+  }, [duplicate, pause, play, stop, updateSettings]);
 
   const addFiles = useCallback(async (files: FileList | File[], position: { x: number; y: number }) => {
     const audioFiles = Array.from(files).filter((file) =>
@@ -247,6 +339,10 @@ function Canvas() {
           playbackRate: 1,
           volumeDb: -6,
           loop: false,
+          sampleStart: 0,
+          sampleEnd: decoded.duration,
+          loopStart: 0,
+          loopEnd: decoded.duration,
         };
         setNodes((current) => [...current, makeNode(stored)]);
         setMessage(`Imported ${file.name}. Its audio is now managed by this workspace.`);
@@ -262,9 +358,7 @@ function Canvas() {
     async function restore() {
       try {
         const [sources, savedNodes] = await Promise.all([loadAudioSources(), loadWorkspace()]);
-        for (const source of sources) {
-          await registerAudioSource(source.id, source.blob);
-        }
+        for (const source of sources) await registerAudioSource(source.id, source.blob);
         if (cancelled) return;
         setNodes(savedNodes.map(makeNode));
         if (savedNodes.length) {
@@ -288,6 +382,10 @@ function Canvas() {
     playbackRate: node.data.playbackRate,
     volumeDb: node.data.volumeDb,
     loop: node.data.loop,
+    sampleStart: node.data.sampleStart,
+    sampleEnd: node.data.sampleEnd,
+    loopStart: node.data.loopStart,
+    loopEnd: node.data.loopEnd,
   })), [nodes]);
 
   const saveProject = useCallback(async () => {
@@ -363,7 +461,7 @@ function Canvas() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-symbol">s</span>
-          <div><strong>soundThing</strong><small>playable canvas · prototype 0.3.0</small></div>
+          <div><strong>soundThing</strong><small>playable canvas · prototype 0.4.0</small></div>
         </div>
         <div className="toolbar">
           <button className="toolbar-button" onClick={() => projectInput.current?.click()}>Open project</button>
