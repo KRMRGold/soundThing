@@ -10,7 +10,7 @@ import {
   type NodeProps,
   type NodeTypes,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
   playSoundThing,
   registerAudioSource,
@@ -132,7 +132,6 @@ function Canvas() {
 
   const stop = useCallback((id: string) => {
     stopSoundThing(id);
-    updateSettings(id, { });
     setNodes((current) => current.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, playing: false } } : node,
     ));
@@ -154,6 +153,28 @@ function Canvas() {
     }
   }, [setNodes]);
 
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
+  const duplicate = useCallback((id: string) => {
+    const original = nodesRef.current.find((node) => node.id === id);
+    if (!original) return;
+    const copy: SoundThingNode = {
+      ...original,
+      id: crypto.randomUUID(),
+      position: { x: original.position.x + 340, y: original.position.y + 45 },
+      data: {
+        ...original.data,
+        playbackRate: 1,
+        volumeDb: -6,
+        loop: false,
+        playing: false,
+      },
+    };
+    setNodes((current) => [...current, copy]);
+    setMessage("Created an independent sound thing using the same audio source.");
+  }, [setNodes]);
+
   const makeNode = useCallback((stored: StoredSoundThing): SoundThingNode => ({
     id: stored.id,
     type: "soundThing",
@@ -172,25 +193,7 @@ function Canvas() {
       onDuplicate: duplicate,
       onSettingsChange: updateSettings,
     },
-  }), [play, stop, updateSettings]);
-
-  const duplicate = useCallback((id: string) => {
-    const original = nodes.find((node) => node.id === id);
-    if (!original) return;
-    const copy: StoredSoundThing = {
-      id: crypto.randomUUID(),
-      sourceId: original.data.sourceId,
-      sourceName: original.data.sourceName,
-      duration: original.data.duration,
-      waveform: original.data.waveform,
-      position: { x: original.position.x + 340, y: original.position.y + 45 },
-      playbackRate: 1,
-      volumeDb: -6,
-      loop: false,
-    };
-    setNodes((current) => [...current, makeNode(copy)]);
-    setMessage("Created an independent sound thing using the same audio source.");
-  }, [makeNode, nodes, setNodes]);
+  }), [duplicate, play, stop, updateSettings]);
 
   const addFiles = useCallback(async (files: FileList | File[], position: { x: number; y: number }) => {
     const audioFiles = Array.from(files).filter((file) =>
@@ -276,13 +279,13 @@ function Canvas() {
     }
   }, [nodes]);
 
-  const onDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const onDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
     if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files, position);
   }, [addFiles, screenToFlowPosition]);
 
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }, []);
@@ -325,8 +328,6 @@ function Canvas() {
           edges={[]}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
           fitView
           minZoom={0.15}
           maxZoom={2}
