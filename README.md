@@ -2,7 +2,7 @@
 
 An instrument-centered music-making environment built around a spatial canvas of independently playable sound things.
 
-**Current state:** prototype candidate 0.4.1 — draggable sample regions and One-Shot/Loop modes; Loop repeats the selected sample region. Build and browser verification are pending.
+**Current state:** prototype candidate 0.5.0 — sampler loop simplification plus canvas selection and navigation controls. Build and browser verification are pending.
 
 ## Run locally
 
@@ -28,6 +28,8 @@ npm run build
 - Drag across the waveform to select a sample region and adjust its start/end boundaries.
 - Play the selected region in One-Shot or Loop mode.
 - Adjust playback rate and level per sound thing.
+- Drag on empty canvas space with the left mouse button to box-select sound things; drag a selected sound thing to move the selection together.
+- Drag with the middle mouse button to pan around the canvas.
 - Use the **+** control to create another sound thing referencing the same managed audio source.
 - Choose **Save project** to download a portable `.soundthing` project file.
 - Choose **Open project** to restore a previously saved project, including its audio.
