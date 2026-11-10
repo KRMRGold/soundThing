@@ -175,7 +175,7 @@ const nodeTypes: NodeTypes = { soundThing: SoundThing };
 
 function Canvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState<SoundThingNode>([]);
-  const [message, setMessage] = useState("Drop an audio file anywhere on the canvas to create a sound thing.");
+  const [message, setMessage] = useState("Left-drag empty space to select · middle-drag to pan · drop audio to create a sound thing.");
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const projectInput = useRef<HTMLInputElement>(null);
