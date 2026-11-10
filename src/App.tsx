@@ -61,14 +61,7 @@ function formatSampleTime(seconds: number): string {
 
 function SoundThing({ id, data }: NodeProps<SoundThingNode>) {
   const updateRegion = (region: { sampleStart: number; sampleEnd: number }) => {
-    const minimum = Math.min(0.01, data.duration);
-    const loopStart = Math.min(Math.max(data.loopStart, region.sampleStart), region.sampleEnd - minimum);
-    const loopEnd = Math.min(Math.max(data.loopEnd, loopStart + minimum), region.sampleEnd);
-    data.onSettingsChange(id, {
-      ...region,
-      loopStart,
-      loopEnd,
-    });
+    data.onSettingsChange(id, region);
   };
 
   return (
@@ -145,41 +138,7 @@ function SoundThing({ id, data }: NodeProps<SoundThingNode>) {
         </label>
       </div>
 
-      {data.loop && (
-        <div className="loop-settings nodrag">
-          <div className="loop-heading">LOOP REGION</div>
-          <div className="setting-row">
-            <label htmlFor={`loop-start-${id}`}>Loop in</label>
-            <input
-              id={`loop-start-${id}`}
-              type="range"
-              min={data.sampleStart}
-              max={data.sampleEnd - Math.min(0.01, data.duration)}
-              step="0.01"
-              value={data.loopStart}
-              onChange={(event) => data.onSettingsChange(id, {
-                loopStart: Math.min(Number(event.target.value), data.loopEnd - Math.min(0.01, data.duration)),
-              })}
-            />
-            <output>{formatSampleTime(data.loopStart)}</output>
-          </div>
-          <div className="setting-row">
-            <label htmlFor={`loop-end-${id}`}>Loop out</label>
-            <input
-              id={`loop-end-${id}`}
-              type="range"
-              min={data.sampleStart + Math.min(0.01, data.duration)}
-              max={data.sampleEnd}
-              step="0.01"
-              value={data.loopEnd}
-              onChange={(event) => data.onSettingsChange(id, {
-                loopEnd: Math.max(Number(event.target.value), data.loopStart + Math.min(0.01, data.duration)),
-              })}
-            />
-            <output>{formatSampleTime(data.loopEnd)}</output>
-          </div>
-        </div>
-      )}
+
 
       <div className="setting-row nodrag">
         <label htmlFor={`rate-${id}`}>Rate</label>
