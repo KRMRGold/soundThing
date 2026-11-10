@@ -12,9 +12,11 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
+  pauseSoundThing,
   playSoundThing,
   registerAudioSource,
   stopSoundThing,
+  updateSoundThingSettings,
   type PlaybackSettings,
 } from "./audio/engine";
 import {
@@ -35,7 +37,9 @@ type SoundThingData = {
   volumeDb: number;
   loop: boolean;
   playing: boolean;
+  paused: boolean;
   onPlay: (id: string, sourceId: string, settings: PlaybackSettings) => void;
+  onPause: (id: string) => void;
   onStop: (id: string) => void;
   onDuplicate: (id: string) => void;
   onSettingsChange: (id: string, settings: Partial<PlaybackSettings>) => void;
@@ -71,9 +75,10 @@ function SoundThing({ id, data }: NodeProps<SoundThingNode>) {
       </div>
 
       <div className="transport nodrag">
-        <button className={data.playing ? "transport-button active" : "transport-button"} onClick={() => data.playing ? data.onStop(id) : data.onPlay(id, data.sourceId, data)}>
-          {data.playing ? "Stop" : "Play"}
+        <button className={data.playing ? "transport-button active" : "transport-button"} onClick={() => data.playing ? data.onPause(id) : data.onPlay(id, data.sourceId, data)}>
+          {data.playing ? "Pause" : data.paused ? "Resume" : "Play"}
         </button>
+        <button className="stop-button" disabled={!data.playing && !data.paused} onClick={() => data.onStop(id)}>Stop</button>
         <label className="loop-toggle">
           <input
             type="checkbox"
@@ -125,6 +130,7 @@ function Canvas() {
   const { screenToFlowPosition } = useReactFlow();
 
   const updateSettings = useCallback((id: string, settings: Partial<PlaybackSettings>) => {
+    updateSoundThingSettings(id, settings);
     setNodes((current) => current.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, ...settings } } : node,
     ));
@@ -133,24 +139,32 @@ function Canvas() {
   const stop = useCallback((id: string) => {
     stopSoundThing(id);
     setNodes((current) => current.map((node) =>
-      node.id === id ? { ...node, data: { ...node.data, playing: false } } : node,
+      node.id === id ? { ...node, data: { ...node.data, playing: false, paused: false } } : node,
     ));
-  }, [setNodes, updateSettings]);
+  }, [setNodes]);
 
   const play = useCallback(async (id: string, sourceId: string, settings: PlaybackSettings) => {
     try {
       await playSoundThing(id, sourceId, settings, () => {
         setNodes((current) => current.map((node) =>
-          node.id === id ? { ...node, data: { ...node.data, playing: false } } : node,
+          node.id === id ? { ...node, data: { ...node.data, playing: false, paused: false } } : node,
         ));
       });
       setNodes((current) => current.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, playing: true } } : node,
+        node.id === id ? { ...node, data: { ...node.data, playing: true, paused: false } } : node,
       ));
       setMessage("Playing. Audio starts only after a user action, as required by browser audio policies.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to play this audio file.");
     }
+  }, [setNodes]);
+
+  const pause = useCallback((id: string) => {
+    const didPause = pauseSoundThing(id);
+    if (!didPause) return;
+    setNodes((current) => current.map((node) =>
+      node.id === id ? { ...node, data: { ...node.data, playing: false, paused: true } } : node,
+    ));
   }, [setNodes]);
 
   const nodesRef = useRef(nodes);
@@ -169,6 +183,7 @@ function Canvas() {
         volumeDb: -6,
         loop: false,
         playing: false,
+        paused: false,
       },
     };
     setNodes((current) => [...current, copy]);
@@ -188,12 +203,14 @@ function Canvas() {
       volumeDb: stored.volumeDb,
       loop: stored.loop,
       playing: false,
+      paused: false,
       onPlay: play,
+      onPause: pause,
       onStop: stop,
       onDuplicate: duplicate,
       onSettingsChange: updateSettings,
     },
-  }), [duplicate, play, stop, updateSettings]);
+  }), [duplicate, pause, play, stop, updateSettings]);
 
   const addFiles = useCallback(async (files: FileList | File[], position: { x: number; y: number }) => {
     const audioFiles = Array.from(files).filter((file) =>
