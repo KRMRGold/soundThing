@@ -1,8 +1,8 @@
-# Soundthing: Initial Design v0.1.2
+# Soundthing: Initial Design v0.1.3
 
 - **Artifact:** Initial design
-- **Version:** 0.1.2
-- **Status:** Living design document; prototype 0.3.0 accepted baseline; candidate 0.4.0 implemented, verification pending
+- **Version:** 0.1.3
+- **Status:** Living design document; prototype 0.3.0 accepted baseline; candidate 0.4.1 simplified loop behavior, verification pending
 - **Development workflow:** [Development State Machine Workflow v1.6.0](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md)
 - **Workflow adoption:** Soundthing initially adopted workflow v1.6.0. It follows the current canonical version by default; this records the starting point, not a permanent version pin.
 - **Collaboration guidance:** The applicable [Meta-Modules](https://github.com/KRMRGold/Meta-Modules) are summarized in Section 11.
@@ -272,27 +272,27 @@ A first implementation candidate now exists in the repository. It includes:
 
 **Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Candidate 0.3.0 adds portable project archive save/open; its TypeScript check and Vite production build passed in GitHub Actions for commit `30292c3e1931906addb8e274dae7f3307f867b04` (run [42763305503](https://github.com/KRMRGold/soundThing/actions/runs/42763305503)). User-run browser checks confirm Play, Pause, Resume, Stop, and Loop; simultaneous playback and independent settings; local workspace save/restore; `.soundthing` save/open in the original browser and a separate Chrome profile; continued playback after moving or renaming the original external audio file; three to five simultaneous sound things; and concurrent playback of shared-source duplicates alongside sound things using different sources. All listed checks passed in the user's test environment. Cross-device portability and advanced routing/modulation architecture remain unverified.
 
-### Candidate 0.4.0 — Sampler foundation
+### Candidate 0.4.1 — Sampler loop simplification
 
-The 0.3.0 implementation remains the accepted baseline. Candidate 0.4.0 adds:
+The 0.3.0 implementation remains the accepted baseline. Candidate 0.4.1 retains the sampler foundation and simplifies looping:
 - Draggable waveform region selection and movable sample boundaries.
 - Precise sample start/end sliders and selected-region length display.
 - One-Shot and Loop playback modes.
-- Independent loop start/end controls constrained to the selected sample region.
+- Loop mode repeats the complete selected sample region; separate loop-in/loop-out controls are deferred.
 - Per-sound-thing sampler settings, with shared source audio left unchanged.
 - Persistence of sampler settings in IndexedDB and portable project archives.
 - Backward-compatible defaults for 0.3.0 workspaces and project files: the full source is selected and loop boundaries span that source.
 
 **Candidate status:** implementation committed; TypeScript/build and browser acceptance checks are pending. Do not treat 0.4.0 as accepted until verification is complete.
 
-**Acceptance checks for candidate 0.4.0:**
+**Acceptance checks for candidate 0.4.1:**
 1. Drag across the waveform to select a region; drag either boundary to adjust it.
 2. Confirm the selected region and its displayed length update correctly and remain within the source.
 3. Play in One-Shot mode and confirm playback begins at sample start and ends at sample end.
-4. Play in Loop mode and confirm the configured loop start/end repeat without escaping the selected region.
+4. Play in Loop mode and confirm the selected sample region repeats cleanly from sample start to sample end, without buzzing or unexpected offsets.
 5. Pause and resume in both modes; confirm playback continues from the correct position.
 6. Change playback rate and level while playing; confirm the controls remain independent.
-7. Create two sound things from one source, assign different sample and loop regions, and confirm editing one does not alter the other.
+7. Create two sound things from one source, assign different sample regions, and confirm editing one does not alter the other.
 8. Save and reopen in the same browser; confirm all sampler settings persist.
 9. Export and reopen a project archive; confirm all sampler settings and audio persist.
 10. Open a 0.3.0 project and confirm it loads with the full source selected and existing playback settings intact.
@@ -318,7 +318,7 @@ The 0.3.0 implementation remains the accepted baseline. Candidate 0.4.0 adds:
 8. Exercise three to five simultaneously playing sound things and inspect responsiveness and audio stability.
 9. Test duplicated sound things sharing one source alongside sound things using different sources; playback and independent settings work together.
 
-Independent sample-region editing, One-Shot/Loop modes, and adjustable loop boundaries are introduced in candidate 0.4.0 and remain unverified. Seeking as a transport control, reverse, independent pitch shifting, envelopes, MIDI input, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization remain later capabilities.
+Independent sample-region editing and simplified One-Shot/Loop modes are introduced in candidates 0.4.0–0.4.1 and remain unverified. Adjustable loop boundaries are deferred. Seeking as a transport control, reverse, independent pitch shifting, envelopes, MIDI input, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization remain later capabilities.
 
 After this foundation is verified, those broader features can be developed without cramming them into the first prototype.
 
@@ -340,18 +340,17 @@ These foundation checks are complete in the user's tested browser environment. C
 
 ### Stage 2 — Sampler foundation and playback reliability
 
-**Candidate 0.4.0 scope:** implement sample-region editing and basic One-Shot/Loop playback while strengthening the existing player lifecycle. Candidate 0.4.0 is implemented but is not accepted until its build and runtime checks pass.
+**Candidate 0.4.1 scope:** retain sample-region editing and simplify One-Shot/Loop playback so both modes use the selected sample boundaries. Candidate 0.4.1 is implemented but is not accepted until its build and runtime checks pass.
 
 - Treat the imported audio as an immutable, shared source asset.
 - Give each sound thing independent sample start/end positions, measured in seconds relative to the source.
 - Allow a user to drag across the waveform to select a region and drag either boundary to refine it; provide precise start/end controls as an accessible alternative.
 - Display the selected region and its length against the full source waveform.
-- Provide One-Shot and Loop modes. One-Shot plays from sample start to sample end. Loop mode plays the selected sample region and repeats between its independently adjustable loop start/end points.
-- Constrain loop boundaries to the selected sample region and prevent zero-length or invalid regions.
-- Preserve region and loop settings in IndexedDB and portable project archives.
+- Provide One-Shot and Loop modes. One-Shot plays from sample start to sample end. Loop mode repeats the complete selected sample region, from sample start to sample end.
+- Preserve sample-region settings in IndexedDB and portable project archives. Legacy loop-boundary fields remain tolerated for compatibility but are no longer used by playback.
 - Load older 0.3.0 project/workspace records with the entire source selected and loop boundaries spanning that source.
 - Keep shared audio sources and each sound thing's sampler settings independent.
-- Verify pause/resume, stop, playback-rate changes, loop changes, and simultaneous players across selected regions; repair stale callbacks and cleanup issues found during testing.
+- Verify pause/resume, stop, playback-rate changes, loop boundaries derived from the selected region, and simultaneous players; repair stale callbacks and cleanup issues found during testing.
 - Keep React Flow as the visual canvas only; sampler and audio state remain in the audio/application layers.
 
 ### Stage 3 — Expand sampler behavior into playable instruments and live MIDI input
