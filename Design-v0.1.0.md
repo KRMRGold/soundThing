@@ -3,8 +3,9 @@
 - **Artifact:** Initial design
 - **Version:** 0.1.0
 - **Status:** Initial design candidate, not an implementation specification
-- **Development workflow:** [Development State Machine Workflow v1.3.0](../../DevelopmentWorkflow/Development-State-Machine-Workflow-v1.3.0.md)
-- **Workflow adoption:** Soundthing adopts the reusable Development State Machine Workflow v1.3.0. The workflow remains a separate reusable component; this document describes Soundthing and how the workflow applies to it.
+- **Development workflow:** [Development State Machine Workflow v1.6.0](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md)
+- **Workflow adoption:** Soundthing initially adopted workflow v1.6.0. It follows the current canonical version by default; this records the starting point, not a permanent version pin.
+- **Collaboration guidance:** The applicable [Meta-Modules](https://github.com/KRMRGold/Meta-Modules) are summarized in Section 11.
 
 ## 1. Vision
 
@@ -166,50 +167,49 @@ The specific storage system, audio import workflow, recording format, and persis
 5. What is required for reliable recording, persistence, and audio asset management?
 6. Which plugin formats, if any, are practical in the browser, desktop wrapper, or both?
 
-## 11. Development State Machine Workflow
+## 11. Project Workflow and Collaboration Guidance
 
-Soundthing adopts the [Development State Machine Workflow v1.3.0](../../DevelopmentWorkflow/Development-State-Machine-Workflow-v1.3.0.md). The workflow governs how ideas become requirements, how requirements become implementation candidates, and how candidates are verified before acceptance. It remains a separate reusable component.
+### Development workflow
 
-### Development stages
+Soundthing uses the reusable [Development State Machine Workflow](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md), initially adopted at v1.6.0. The workflow governs how ideas are refined, scope and acceptance criteria are agreed, implementation candidates are created, and changes are inspected and verified.
 
-1. **Initial design:** Capture the vision, core concepts, constraints, and open questions. Distinguish decisions from proposals and assumptions.
-2. **Refinement:** Resolve meaningful ambiguities, investigate existing solutions, compare alternatives, and improve the design without prematurely locking implementation details.
-3. **Approval and acceptance criteria:** Define the proposed scope and observable evidence of success. The user retains authority over design decisions and approval.
-4. **Versioned implementation candidate:** Define a bounded change and create an identifiable candidate that can be reviewed and tested. Keep the prior accepted baseline recoverable.
-5. **Source inspection:** Inspect the repository, architecture, relevant modules, and development instructions before changing code. Reuse existing infrastructure where appropriate.
-6. **Runtime and acceptance testing:** Test actual behavior against the agreed criteria. For audio features, this may include playback, synchronization, object independence, persistence, and interaction tests.
-7. **Acceptance gate:** Evaluate evidence against the acceptance criteria. Code is not accepted merely because it was written or looks correct.
-8. **Repair and iteration:** Preserve failed candidates and evidence. Diagnose whether the issue is in the design, implementation, or test assumptions; create a new candidate version and retest.
-9. **Maintenance update:** After acceptance, record the accepted code version, source reference, test evidence, differences from the design, and known limitations. Version the maintenance document independently.
-10. **Next decision:** Choose the next bounded change or decide whether the desired scope is complete.
-11. **Milestone document:** When the user declares the app complete to the desired scope, reconcile the initial design, latest maintenance record, and accepted code into an independently versioned milestone reference.
+The workflow remains canonical in Meta-Modules rather than being copied into this design. Soundthing follows its current version by default. Git history preserves earlier revisions; the initial adoption version above is provenance, not a permanent pin.
+
+Apply the workflow proportionately:
+- Keep design decisions, proposals, assumptions, and open questions distinguishable.
+- Investigate established solutions before committing to custom technology or architecture.
+- Define observable acceptance criteria before treating an implementation candidate as ready.
+- Preserve the last accepted working state while evaluating changes.
+- Inspect and test actual behavior; report checks as passed, failed, blocked, or not run based on evidence.
+- Update project records from verified results, and keep living documents at one stable path.
+
+### Meta-Modules in use
+
+The project uses the following guidance from the [Meta-Modules repository](https://github.com/KRMRGold/Meta-Modules). These are the active collaboration modules for Soundthing; the list is intentionally consolidated here rather than repeating links to each module.
+
+- **PAFC (Prior-Art-First Collaboration):** investigate terminology, existing tools, standards, and established approaches before inventing; recommend reuse or adaptation where appropriate while preserving worthwhile experimentation.
+- **Intent & Clarity:** understand the actual goal, make useful recommendations, and ask focused questions only when ambiguity could materially change the result.
+- **Discovery & Exploration:** surface relevant concepts, tools, techniques, and possibilities without derailing the project or taking over its direction.
+- **Capability & Agency:** make practical progress while keeping the user's goals, creative ownership, and decisions central.
+- **Testing & Verification:** derive meaningful tests from acceptance criteria, inspect existing test infrastructure before adding dependencies, and verify behavior at appropriate levels.
+- **Tool Use and Consent Boundaries:** respect the project's tool restrictions and obtain any required permission before using a restricted capability.
+
+These modules guide collaboration; they do not replace Soundthing's design decisions or the development workflow. Add other specialized modules only when a concrete project need justifies them.
 
 ### Applying the workflow to Soundthing
 
-A small interface experiment does not need the same scope as a new audio engine, but each change should have a clear purpose and observable evaluation criteria.
+An initial prototype should validate a small but meaningful part of the interaction model. A useful first slice is:
 
-An initial prototype could test whether a user can:
 1. Load a sample.
-2. Place it on the canvas as a sound thing.
-3. Play and stop it.
-4. Create a second sound thing that references the same source.
+2. Place it on the canvas as an independent sound thing.
+3. Play and stop it using its own controls.
+4. Create a second sound thing that references the same audio source.
 5. Change the second object's playback settings without unintentionally changing the first.
+6. Save and reopen the workspace while preserving both objects and their independent configurations.
 
-This tests a meaningful part of Soundthing's architecture without requiring the full sampler, drum rack, plugin system, and synchronization engine at once.
+This validates the core relationship between sound things, their shared audio sources, and the canvas without requiring the full sampler, drum rack, plugin system, or synchronization engine.
 
-Acceptance criteria should be agreed before the implementation candidate is treated as ready for evaluation.
-
-### Workflow principles
-
-- Inspect the relevant repository and instructions before implementation.
-- Investigate existing solutions before building custom infrastructure.
-- Keep proposals, approved decisions, and unverified assumptions distinguishable.
-- Define observable acceptance criteria.
-- Never claim tests passed unless they were actually run.
-- Preserve user authority over consequential design choices.
-- Keep implementation changes bounded and traceable.
-- Update project documentation and maintenance records at the appropriate workflow stage.
-- Use prototype results to inform later decisions rather than treating early assumptions as permanent architecture.
+Acceptance criteria should be agreed before an implementation candidate is evaluated. Testing should include actual audio playback and persistence where the runtime permits; checks that cannot be run must be identified as unverified rather than assumed to pass.
 
 ## 12. Design Principles
 
