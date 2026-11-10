@@ -153,7 +153,7 @@ The first playable-canvas prototype uses this stack as a working candidate. It i
 - **IndexedDB:** local storage for imported audio blobs and saved workspace configuration.
 - **Tauri:** deferred until desktop-specific capabilities justify it.
 
-The current prototype demonstrates the initial library combination at build level. It does not yet establish runtime audio reliability, performance at larger scales, or suitability for the complete routing/modulation architecture.
+The current prototype has now been exercised in a browser for core playback, simultaneous playback of two sound things, independent settings, and explicit workspace save/restore. These results provide initial runtime evidence, but performance with larger numbers of simultaneous sound things and suitability for the complete routing/modulation architecture remain unverified.
 
 ### Audio architecture boundary
 
@@ -264,16 +264,21 @@ A first implementation candidate now exists in the repository. It includes:
 - Creation of another sound thing that references the same decoded audio source while keeping its own playback settings.
 - IndexedDB storage for imported audio blobs and an explicit Save workspace action; saved workspace state is restored when the app opens.
 
-**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. This is source/build evidence only. Actual browser playback, drag-and-drop behavior, shared-source behavior, and save/reopen behavior have not yet been runtime-tested. The candidate is therefore implemented but not accepted.
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has since confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and workspace save/restore. After saving with the workspace button, closing and reopening the browser restores the sound things, their settings, and their canvas positions. This is user-reported runtime evidence; the tests below remain open where not explicitly confirmed.
 
-### Remaining first-milestone acceptance checks
+### First-milestone acceptance checks
+
+<badge>PASS — user tested</badge>
 
 1. Run the application in a supported browser.
-2. Import and play representative audio files; confirm Play/Pause/Resume/Stop and Loop work.
-3. Create a second sound thing from the same source and confirm independent playback-rate, level, and loop settings.
-4. Move or rename the original external file and confirm the managed import remains playable.
-5. Save, reload, and confirm the canvas, source data, and independent settings are restored.
-6. Exercise several simultaneously playing sound things and inspect responsiveness and audio stability.
+2. Confirm Play/Pause/Resume/Stop and Loop work.
+3. Confirm two sound things can play simultaneously and their settings remain independent.
+4. Save the workspace, close and reopen the browser, and confirm sound things, settings, and canvas positions are restored.
+
+<badge>NOT YET TESTED</badge>
+
+5. Move or rename the original external audio file and confirm the managed import remains playable.
+6. Exercise several (for example, three to five) simultaneously playing sound things and inspect responsiveness and audio stability.
 
 Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
 
