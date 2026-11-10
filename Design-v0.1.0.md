@@ -280,11 +280,77 @@ A first implementation candidate now exists in the repository. It includes:
 5. Move or rename the original external audio file and confirm the managed import remains playable.
 6. Exercise several (for example, three to five) simultaneously playing sound things and inspect responsiveness and audio stability.
 
-Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
+Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, live MIDI keyboard input, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
 
 After this foundation is verified, those broader features can be developed without cramming them into the first prototype.
 
-## 14. Open Design Questions
+## 14. Development Path
+
+The roadmap is ordered by dependency: validate the current foundation, make sound things behave as instruments, then add shared timing and more advanced production capabilities. These are planned stages, not claims that the features already exist. Revisit priorities as real use reveals what matters most.
+
+### Stage 1 — Finish validating the current foundation
+
+- Move or rename the original external audio file and confirm the managed import remains playable.
+- Test three to five simultaneous sound things.
+- Test both duplicated sound things sharing one source and sound things using different sources.
+- Observe audio stability, responsiveness, and whether playback controls remain independent.
+
+Do not expand the feature set until these basic source-management and playback checks have been completed.
+
+### Stage 2 — Strengthen the audio foundation
+
+- Improve source lifecycle and player cleanup.
+- Handle missing, invalid, or unavailable audio sources clearly.
+- Add focused tests for playback state transitions and independent settings.
+- Establish the audio-engine interfaces needed for future instrument voices and processing without coupling them to React Flow.
+
+### Stage 3 — Build playable instruments and live MIDI input
+
+- Extend sound things beyond one-shot playback into note-triggered instruments.
+- Add basic sampler controls such as pitch, playback range, and note duration/hold behavior.
+- Support polyphonic note playing where the selected instrument allows it.
+- Connect a physical MIDI keyboard through the browser's Web MIDI API.
+- Provide a clear MIDI input connection/device choice and show which sound thing receives the notes. The initial default can be the selected or explicitly armed sound thing.
+- Handle note-on, note-off (including note-on with zero velocity), pitch, velocity, and MIDI channel. Prevent stuck notes when a device disconnects or input focus changes.
+- Keep MIDI input separate from the audio engine: MIDI supplies performance events; the selected instrument turns those events into sound.
+- Start without requiring MIDI System Exclusive support. Controller mappings such as sustain, pitch bend, modulation, and other CC messages can follow once basic note input is reliable.
+
+The intended first MIDI milestone is live playing from a connected keyboard, not MIDI-file import or MIDI output to external hardware. The Web MIDI API requires a secure context and user permission, and browser support is not universal; detect support and communicate limitations rather than assuming every browser can connect. See the [MDN Web MIDI API reference](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API). Tone.js already provides note-triggered [Sampler](https://tonejs.github.io/docs/Sampler) and polyphonic instrument primitives that can be evaluated before building custom voice handling.
+
+### Stage 4 — Add timing and synchronization
+
+- Introduce a workstation-wide master tempo.
+- Preserve each sound thing's original tempo as reference information.
+- Add tempo matching and synchronized loops.
+- Account for loop length, start position, and rhythmic phase, not only BPM.
+
+### Stage 5 — Add slicing and drum racks
+
+- Divide samples into editable regions.
+- Trigger slices individually.
+- Map slices to playable pads/triggers.
+- Preserve the original sound thing and shared source.
+
+### Stage 6 — Add modular processing and routing
+
+- Add per-sound-thing effect racks.
+- Introduce explicit audio connections between sound things.
+- Add sidechain and other signal-routing relationships.
+- Keep audio routing separate from the canvas's visual edges.
+
+### Stage 7 — Add automation and modulation
+
+- Automate sound-thing and effect parameters over time.
+- Add LFOs and other modulation sources.
+- Allow compatible controls to be linked visually and inspectably.
+
+### Stage 8 — Production, portability, and recovery
+
+- Add recording and audio export.
+- Add workspace and source backup/recovery.
+- Evaluate desktop packaging with Tauri when browser limitations or desktop-specific capabilities justify it.
+
+## 15. Open Design Questions
 
 - What are the primary gestures for creating, moving, opening, and playing sound things?
 - How should playback modes be presented and changed?
