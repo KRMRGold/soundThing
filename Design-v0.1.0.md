@@ -139,40 +139,45 @@ The design should distinguish between:
 
 Synchronization must account for more than matching BPM. Loop length, start position, rhythmic phase, and playback behavior may also affect alignment. The exact algorithms and controls remain technical design questions, but the intended user-facing model is master tempo/sync with each sound thing retaining a visible reference to its original tempo.
 
-## 10. Proposed Technology Stack
+## 10. Technology Stack
 
-This is a candidate stack for investigation, not an approved implementation commitment.
+### Initial prototype stack
 
-### Audio engine
+The first playable-canvas prototype uses this stack as a working candidate. It is a scoped implementation choice, not a permanent commitment for the complete workstation.
 
-- **Web Audio API:** the native browser audio platform and starting candidate for sample playback, routing, effects, and real-time processing.
-- **Tone.js:** evaluate for musical scheduling, tempo-aware playback, transport controls, and common music-making primitives. Use it where it simplifies implementation without constraining Soundthing's interaction model.
-- **AudioWorklet:** investigate for custom real-time audio processing when a defined requirement calls for it, rather than assuming it is needed everywhere.
+- **Web Audio API:** native audio decoding and browser audio foundation.
+- **Tone.js:** independent sample players and playback controls. The prototype decodes an imported source once, wraps the decoded buffer in a shared `ToneAudioBuffer`, and creates separate `Tone.Player` instances for sound things that reference it.
+- **React + TypeScript:** interface and typed separation between canvas objects, source records, and audio operations.
+- **React Flow (`@xyflow/react`):** spatial viewport, pan/zoom, node movement, and custom sound-thing nodes. It owns visual graph state, not audio routing or the audio engine.
+- **Vite:** development server and production build.
+- **IndexedDB:** local storage for imported audio blobs and saved workspace configuration.
+- **Tauri:** deferred until desktop-specific capabilities justify it.
 
-### Interface
+The current prototype demonstrates the initial library combination at build level. It does not yet establish runtime audio reliability, performance at larger scales, or suitability for the complete routing/modulation architecture.
 
-- **TypeScript:** a candidate for maintaining clear interfaces between sound things, configurations, canvas interactions, and the audio engine.
-- **React:** a candidate for the interface and reusable controls.
-- **Custom infinite canvas:** the spatial workspace is central to Soundthing's identity. Its interaction model should support moving, selecting, inspecting, and playing sound things, rather than treating it as a conventional timeline. The rendering technology remains open until behavior and performance needs are clearer.
+### Audio architecture boundary
 
-### Desktop packaging
+The application owns sound-thing identity, source references, independent settings, and workspace persistence. The audio layer owns decoded buffers and player instances. Multiple players may reference the same decoded source while retaining independent playback rate, loop, and level settings.
 
-- **Tauri:** a candidate for packaging the web-first application as a desktop app. Browser-based development should remain viable where practical.
-- Desktop packaging should not dictate the initial architecture before its benefits and constraints have been evaluated.
+The canvas and audio engine must remain separate. React Flow edges or node state must not become the authority for audio routing, synchronization, or modulation. Those relationships will need an explicit audio/control graph when those capabilities are designed.
 
-### Storage and audio assets
+### Storage caveat
 
-The architecture needs to distinguish audio data from sound thing configurations. A configuration may include its source reference, playback method, slice regions, controls, and processing chain. Multiple objects should be able to reference shared audio without unintentionally sharing all settings.
+IndexedDB currently stores imported audio as blobs and workspace state as structured data. Browser storage is normally best-effort and can be evicted under browser/device storage pressure or cleared by the user. A future persistence design needs explicit export/backup and recovery behavior. OPFS remains an option to investigate if large asset storage or streaming access makes it worthwhile; it is not currently used.
 
-The specific storage system, audio import workflow, recording format, and persistence strategy remain to be investigated.
+### Deferred technologies
+
+- **AudioWorklet:** use for custom real-time processing when requirements justify it.
+- **PixiJS or another GPU-oriented renderer:** investigate only if the node-based canvas reaches rendering limits or needs substantially richer visual scenes.
+- **Tauri:** evaluate for desktop packaging after browser-first behavior is validated.
+- **Plugin formats:** remain a future architecture question, not a first-prototype requirement.
 
 ### Stack decision principles
 
 - Prefer established audio technologies where they meet the requirements.
-- Build custom functionality where Soundthing's interaction model genuinely requires it.
 - Keep the audio engine conceptually separate from the interface.
-- Avoid committing to libraries before validating their limitations.
-- Evaluate real-time performance, synchronization accuracy, browser support, and desktop requirements.
+- Build custom functionality where Soundthing's interaction model genuinely requires it.
+- Validate runtime behavior and performance before treating the stack as accepted.
 - Introduce dependencies only when they solve a defined problem.
 
 ### Technical validation questions
@@ -247,18 +252,32 @@ Acceptance criteria should be agreed before an implementation candidate is evalu
 
 ## 13. Initial Scope
 
-The first prototype should validate the core interaction model, not attempt to reproduce a complete DAW.
+The first prototype validates the core interaction model, not a complete DAW.
 
-A reasonable starting slice is:
-- An infinite or sufficiently large spatial canvas.
-- Dragging an audio file from a folder/file manager onto the canvas creates a basic sound thing that can load and play it.
-- Independent playback controls.
-- A second object or variation can reference the same managed audio source while maintaining separate settings.
-- Imported audio remains available if the original external file is moved or deleted.
-- A clear way to inspect an object's source relationship.
-- Basic persistence sufficient to validate the workflow.
+### Prototype candidate 0.1.0
 
-After that foundation works, slicing, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization can be developed as separate, testable capabilities. These are part of the broader design direction, not requirements to cram into the first prototype.
+A first implementation candidate now exists in the repository. It includes:
+- A spatial canvas with pan, zoom, and movable sound-thing nodes.
+- Audio import through file selection or drag-and-drop onto the canvas.
+- Waveform previews derived from decoded audio.
+- Individual Play/Stop, Loop, playback-rate, and level controls.
+- Creation of another sound thing that references the same decoded audio source while keeping its own playback settings.
+- IndexedDB storage for imported audio blobs and an explicit Save workspace action; saved workspace state is restored when the app opens.
+
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for commit `76095441d007191a4751ca455daacb6461701922`. This is source/build evidence only. Actual browser playback, drag-and-drop behavior, shared-source behavior, and save/reopen behavior have not yet been runtime-tested. The candidate is therefore implemented but not accepted.
+
+### Remaining first-milestone acceptance checks
+
+1. Run the application in a supported browser.
+2. Import and play representative audio files; confirm Play/Stop and Loop work.
+3. Create a second sound thing from the same source and confirm independent playback-rate, level, and loop settings.
+4. Move or rename the original external file and confirm the managed import remains playable.
+5. Save, reload, and confirm the canvas, source data, and independent settings are restored.
+6. Exercise several simultaneously playing sound things and inspect responsiveness and audio stability.
+
+Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
+
+After this foundation is verified, those broader features can be developed without cramming them into the first prototype.
 
 ## 14. Open Design Questions
 
