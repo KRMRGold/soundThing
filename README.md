@@ -2,7 +2,7 @@
 
 An instrument-centered music-making environment built around a spatial canvas of independently playable sound things.
 
-**Current state:** playable-canvas prototype 0.2.0 — implementation candidate; browser behavior still needs runtime testing.
+**Current state:** playable-canvas prototype 0.3.0 — portable project save/open is implemented; browser runtime verification is pending.
 
 ## Run locally
 
@@ -28,14 +28,17 @@ npm run build
 - Play, pause/resume, stop, and loop each sound thing independently.
 - Adjust playback rate and level per sound thing.
 - Use the **+** control to create another sound thing referencing the same managed audio source.
-- Choose **Save workspace** to save the canvas and settings in this browser.
+- Choose **Save project** to download a portable `.soundthing` project file.
+- Choose **Open project** to restore a previously saved project, including its audio.
 
-## Saving and portability
+## Project files and browser storage
 
-**Save workspace does not create or download a save file.** It stores the workspace configuration and imported audio blobs in IndexedDB, the browser's built-in local database.
+A `.soundthing` file is a ZIP-based project archive containing a versioned JSON manifest, the workspace layout and sound-thing settings, and the audio assets used by the project. It is self-contained: moving the project file to another device does not require the original audio files or the browser's existing database.
 
-That means the workspace can be restored when you reopen the app using the same browser profile and site origin. It is not automatically available in another browser, browser profile, or device. Clearing the browser's site data can delete it, and browser-managed storage is not a guaranteed backup.
+Saving also keeps a local IndexedDB copy so the project can be restored when reopening the app in the same browser profile and site origin. Opening a project imports its audio assets into browser storage and replaces the currently displayed workspace. Existing unreferenced audio records may remain in local storage for now.
 
-A portable workspace file with an export/import option is a future feature; it is not implemented yet.
+The browser copy is not a backup by itself: clearing site data or browser storage eviction can remove it. Keep the downloaded `.soundthing` file somewhere safe.
 
-See [Design-v0.1.0.md](./Design-v0.1.0.md) for the broader design and milestone scope.
+The project format has an explicit version field so it can evolve as soundThing gains instruments, routing, automation, and other capabilities.
+
+See [Design-v0.1.0.md](./Design-v0.1.0.md) for the broader design and development path.
