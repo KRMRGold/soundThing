@@ -150,10 +150,11 @@ The first playable-canvas prototype uses this stack as a working candidate. It i
 - **React + TypeScript:** interface and typed separation between canvas objects, source records, and audio operations.
 - **React Flow (`@xyflow/react`):** spatial viewport, pan/zoom, node movement, and custom sound-thing nodes. It owns visual graph state, not audio routing or the audio engine.
 - **Vite:** development server and production build.
-- **IndexedDB:** local storage for imported audio blobs and saved workspace configuration.
+- **IndexedDB:** local working storage for imported audio blobs and saved workspace configuration.
+- **Portable project files:** versioned `.soundthing` ZIP archives containing a manifest, workspace configuration, and the audio assets referenced by that workspace.
 - **Tauri:** deferred until desktop-specific capabilities justify it.
 
-The current prototype has now been exercised in a browser for core playback, simultaneous playback of two sound things, independent settings, and explicit workspace save/restore. These results provide initial runtime evidence, but performance with larger numbers of simultaneous sound things and suitability for the complete routing/modulation architecture remain unverified.
+The current prototype has been exercised in a browser for core playback, simultaneous playback of two sound things, independent settings, and local workspace save/restore. Portable project-file save/open has now been implemented in source, but its browser download/import behavior still requires runtime testing. Performance with larger numbers of simultaneous sound things and suitability for the complete routing/modulation architecture remain unverified.
 
 ### Audio architecture boundary
 
@@ -161,9 +162,13 @@ The application owns sound-thing identity, source references, independent settin
 
 The canvas and audio engine must remain separate. React Flow edges or node state must not become the authority for audio routing, synchronization, or modulation. Those relationships will need an explicit audio/control graph when those capabilities are designed.
 
-### Storage caveat
+### Storage and project-file model
 
-IndexedDB currently stores imported audio as blobs and workspace state as structured data. Browser storage is normally best-effort and can be evicted under browser/device storage pressure or cleared by the user. A future persistence design needs explicit export/backup and recovery behavior. OPFS remains an option to investigate if large asset storage or streaming access makes it worthwhile; it is not currently used.
+IndexedDB stores the browser's working copy: imported audio blobs and the current workspace configuration. The explicit **Save project** action also downloads a self-contained `.soundthing` archive. The archive is ZIP-based and contains a versioned JSON manifest plus the audio assets referenced by the workspace; it does not depend on the original external files or the browser's local database.
+
+**Open project** validates the archive, imports its audio assets into IndexedDB, and replaces the visible workspace. The browser copy remains convenient for reopening the app, while the downloaded project file is the portable backup and transfer format. Browser storage can still be cleared or evicted, so the downloaded file should be kept somewhere safe. The project manifest has an explicit format version to support future migrations as the app's data model grows.
+
+The current import path assigns fresh internal audio-source IDs when loading a project, so opening the same project repeatedly does not collide with existing in-browser source IDs. Unreferenced older audio records are not yet garbage-collected. OPFS remains an option to investigate if large asset storage or streaming access makes it worthwhile; it is not currently used.
 
 ### Deferred technologies
 
@@ -254,7 +259,7 @@ Acceptance criteria should be agreed before an implementation candidate is evalu
 
 The first prototype validates the core interaction model, not a complete DAW.
 
-### Prototype candidate 0.2.0
+### Prototype candidate 0.3.0
 
 A first implementation candidate now exists in the repository. It includes:
 - A spatial canvas with pan, zoom, and movable sound-thing nodes.
@@ -262,9 +267,10 @@ A first implementation candidate now exists in the repository. It includes:
 - Waveform previews derived from decoded audio.
 - Individual Play/Pause/Resume/Stop, Loop, playback-rate, and level controls; playback settings can be adjusted while a sound thing is playing.
 - Creation of another sound thing that references the same decoded audio source while keeping its own playback settings.
-- IndexedDB storage for imported audio blobs and an explicit Save workspace action; saved workspace state is restored when the app opens.
+- IndexedDB storage for imported audio blobs and the browser's current workspace.
+- Portable `.soundthing` project files: **Save project** downloads a versioned archive containing the workspace and its referenced audio assets; **Open project** imports the archive and restores the workspace.
 
-**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has since confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and workspace save/restore. After saving with the workspace button, closing and reopening the browser restores the sound things, their settings, and their canvas positions. This is user-reported runtime evidence; the tests below remain open where not explicitly confirmed.
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Browser testing has confirmed Play, Pause, Resume, Stop, and Loop; simultaneous playback of two sound things; independent playback settings; and IndexedDB workspace save/restore. The portable project archive feature is implemented in candidate 0.3.0, but browser download, re-import, and cross-browser portability have not yet been tested.
 
 ### First-milestone acceptance checks
 
@@ -290,6 +296,8 @@ The roadmap is ordered by dependency: validate the current foundation, make soun
 
 ### Stage 1 — Finish validating the current foundation
 
+- Save a `.soundthing` project, then open it and confirm the workspace, settings, and audio assets are restored.
+- Move the project file to another browser profile or device and confirm it still opens with its audio.
 - Move or rename the original external audio file and confirm the managed import remains playable.
 - Test three to five simultaneous sound things.
 - Test both duplicated sound things sharing one source and sound things using different sources.
@@ -346,8 +354,9 @@ The intended first MIDI milestone is live playing from a connected keyboard, not
 
 ### Stage 8 — Production, portability, and recovery
 
+- **Implemented in candidate 0.3.0:** portable workspace save/open through self-contained `.soundthing` project archives.
 - Add recording and audio export.
-- Add workspace and source backup/recovery.
+- Improve backup/recovery and source cleanup as project size and storage needs grow.
 - Evaluate desktop packaging with Tauri when browser limitations or desktop-specific capabilities justify it.
 
 ## 15. Open Design Questions
