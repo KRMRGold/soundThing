@@ -102,6 +102,107 @@ button { cursor: pointer; }
 .react-flow__minimap { background: #211d19; border: 1px solid #40372f; }
 .react-flow__node { border-radius: 11px; }
 .react-flow__node.selected .sound-thing { border-color: #c99a75; box-shadow: 0 0 0 1px #c99a75, 0 12px 35px rgba(0,0,0,.3); }
+
+.waveform-editor {
+  position: relative;
+  height: 52px;
+  margin: 13px 0 5px;
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: #171513;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+.waveform-bars {
+  position: absolute;
+  inset: 5px 7px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.waveform-bars span {
+  flex: 1;
+  min-width: 1px;
+  border-radius: 2px;
+  background: #a77c5b;
+  opacity: .9;
+}
+.waveform-outside {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(9, 8, 7, .62);
+  pointer-events: none;
+}
+.waveform-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(201, 154, 117, .12);
+  border-top: 1px solid rgba(217, 173, 137, .75);
+  border-bottom: 1px solid rgba(217, 173, 137, .75);
+  pointer-events: none;
+}
+.waveform-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 0;
+  border-left: 2px solid #e3b38e;
+  border-radius: 0;
+  background: transparent;
+  cursor: ew-resize;
+  z-index: 2;
+}
+.waveform-handle.end { border-left-color: #f0d4bd; }
+.sampler-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  color: #bca995;
+  font-size: 8px;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+.region-setting { margin-top: 5px; }
+.sampler-transport { margin-top: 12px; }
+.mode-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: #a99d91;
+  font-size: 10px;
+}
+.mode-control select {
+  max-width: 100px;
+  border: 1px solid #51453a;
+  border-radius: 5px;
+  padding: 5px 6px;
+  color: #e9e1d8;
+  background: #25211e;
+  font-size: 10px;
+}
+.loop-settings {
+  margin: 10px 0 12px;
+  padding: 8px 8px 9px;
+  border: 1px solid #39332e;
+  border-radius: 6px;
+  background: rgba(20, 18, 16, .55);
+}
+.loop-heading {
+  margin-bottom: 7px;
+  color: #c99a75;
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+
 @media (max-width: 600px) {
   .topbar { padding: 0 12px; }
   .brand small { display: none; }
