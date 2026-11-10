@@ -28,8 +28,14 @@ npm run build
 - Play, pause/resume, stop, and loop each sound thing independently.
 - Adjust playback rate and level per sound thing.
 - Use the **+** control to create another sound thing referencing the same managed audio source.
-- Choose **Save workspace** to persist the canvas and settings in this browser.
+- Choose **Save workspace** to save the canvas and settings in this browser.
 
-Imported audio blobs and workspace state are stored in IndexedDB for this browser origin. Browser storage is not a backup; clearing site data can remove it.
+## Saving and portability
+
+**Save workspace does not create or download a save file.** It stores the workspace configuration and imported audio blobs in IndexedDB, the browser's built-in local database.
+
+That means the workspace can be restored when you reopen the app using the same browser profile and site origin. It is not automatically available in another browser, browser profile, or device. Clearing the browser's site data can delete it, and browser-managed storage is not a guaranteed backup.
+
+A portable workspace file with an export/import option is a future feature; it is not implemented yet.
 
 See [Design-v0.1.0.md](./Design-v0.1.0.md) for the broader design and milestone scope.
