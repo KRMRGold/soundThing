@@ -254,22 +254,22 @@ Acceptance criteria should be agreed before an implementation candidate is evalu
 
 The first prototype validates the core interaction model, not a complete DAW.
 
-### Prototype candidate 0.1.0
+### Prototype candidate 0.2.0
 
 A first implementation candidate now exists in the repository. It includes:
 - A spatial canvas with pan, zoom, and movable sound-thing nodes.
 - Audio import through file selection or drag-and-drop onto the canvas.
 - Waveform previews derived from decoded audio.
-- Individual Play/Stop, Loop, playback-rate, and level controls.
+- Individual Play/Pause/Resume/Stop, Loop, playback-rate, and level controls; playback settings can be adjusted while a sound thing is playing.
 - Creation of another sound thing that references the same decoded audio source while keeping its own playback settings.
 - IndexedDB storage for imported audio blobs and an explicit Save workspace action; saved workspace state is restored when the app opens.
 
-**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for commit `76095441d007191a4751ca455daacb6461701922`. This is source/build evidence only. Actual browser playback, drag-and-drop behavior, shared-source behavior, and save/reopen behavior have not yet been runtime-tested. The candidate is therefore implemented but not accepted.
+**Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. This is source/build evidence only. Actual browser playback, drag-and-drop behavior, shared-source behavior, and save/reopen behavior have not yet been runtime-tested. The candidate is therefore implemented but not accepted.
 
 ### Remaining first-milestone acceptance checks
 
 1. Run the application in a supported browser.
-2. Import and play representative audio files; confirm Play/Stop and Loop work.
+2. Import and play representative audio files; confirm Play/Pause/Resume/Stop and Loop work.
 3. Create a second sound thing from the same source and confirm independent playback-rate, level, and loop settings.
 4. Move or rename the original external file and confirm the managed import remains playable.
 5. Save, reload, and confirm the canvas, source data, and independent settings are restored.
