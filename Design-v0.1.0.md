@@ -1,8 +1,8 @@
-# Soundthing: Initial Design v0.1.1
+# Soundthing: Initial Design v0.1.2
 
 - **Artifact:** Initial design
-- **Version:** 0.1.1
-- **Status:** Living design document; prototype candidate 0.3.0 validation complete
+- **Version:** 0.1.2
+- **Status:** Living design document; prototype 0.3.0 accepted baseline; candidate 0.4.0 implemented, verification pending
 - **Development workflow:** [Development State Machine Workflow v1.6.0](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md)
 - **Workflow adoption:** Soundthing initially adopted workflow v1.6.0. It follows the current canonical version by default; this records the starting point, not a permanent version pin.
 - **Collaboration guidance:** The applicable [Meta-Modules](https://github.com/KRMRGold/Meta-Modules) are summarized in Section 11.
@@ -158,7 +158,7 @@ The current prototype has been exercised in a browser for core playback, simulta
 
 ### Audio architecture boundary
 
-The application owns sound-thing identity, source references, independent settings, and workspace persistence. The audio layer owns decoded buffers and player instances. Multiple players may reference the same decoded source while retaining independent playback rate, loop, and level settings.
+The application owns sound-thing identity, source references, independent sampler configuration, and workspace persistence. The audio layer owns decoded buffers and player instances. Multiple players may reference the same decoded source while retaining independent playback rate, loop mode, sample region, loop boundaries, and level settings. Sample and loop positions are stored in seconds relative to the original source; the source audio itself remains unchanged.
 
 The canvas and audio engine must remain separate. React Flow edges or node state must not become the authority for audio routing, synchronization, or modulation. Those relationships will need an explicit audio/control graph when those capabilities are designed.
 
@@ -272,6 +272,31 @@ A first implementation candidate now exists in the repository. It includes:
 
 **Current evidence:** the TypeScript check and Vite production build passed in GitHub Actions for prototype candidate 0.2.0 at commit `11bd49369136bbb453102ad95e65f6021779dfe8`. Candidate 0.3.0 adds portable project archive save/open; its TypeScript check and Vite production build passed in GitHub Actions for commit `30292c3e1931906addb8e274dae7f3307f867b04` (run [42763305503](https://github.com/KRMRGold/soundThing/actions/runs/42763305503)). User-run browser checks confirm Play, Pause, Resume, Stop, and Loop; simultaneous playback and independent settings; local workspace save/restore; `.soundthing` save/open in the original browser and a separate Chrome profile; continued playback after moving or renaming the original external audio file; three to five simultaneous sound things; and concurrent playback of shared-source duplicates alongside sound things using different sources. All listed checks passed in the user's test environment. Cross-device portability and advanced routing/modulation architecture remain unverified.
 
+### Candidate 0.4.0 — Sampler foundation
+
+The 0.3.0 implementation remains the accepted baseline. Candidate 0.4.0 adds:
+- Draggable waveform region selection and movable sample boundaries.
+- Precise sample start/end sliders and selected-region length display.
+- One-Shot and Loop playback modes.
+- Independent loop start/end controls constrained to the selected sample region.
+- Per-sound-thing sampler settings, with shared source audio left unchanged.
+- Persistence of sampler settings in IndexedDB and portable project archives.
+- Backward-compatible defaults for 0.3.0 workspaces and project files: the full source is selected and loop boundaries span that source.
+
+**Candidate status:** implementation committed; TypeScript/build and browser acceptance checks are pending. Do not treat 0.4.0 as accepted until verification is complete.
+
+**Acceptance checks for candidate 0.4.0:**
+1. Drag across the waveform to select a region; drag either boundary to adjust it.
+2. Confirm the selected region and its displayed length update correctly and remain within the source.
+3. Play in One-Shot mode and confirm playback begins at sample start and ends at sample end.
+4. Play in Loop mode and confirm the configured loop start/end repeat without escaping the selected region.
+5. Pause and resume in both modes; confirm playback continues from the correct position.
+6. Change playback rate and level while playing; confirm the controls remain independent.
+7. Create two sound things from one source, assign different sample and loop regions, and confirm editing one does not alter the other.
+8. Save and reopen in the same browser; confirm all sampler settings persist.
+9. Export and reopen a project archive; confirm all sampler settings and audio persist.
+10. Open a 0.3.0 project and confirm it loads with the full source selected and existing playback settings intact.
+11. Re-run the accepted 0.3.0 playback, simultaneous playback, source-retention, and portability checks as regression tests.
 ### First-milestone acceptance checks
 
 <badge>PASS — user tested</badge>
@@ -292,7 +317,7 @@ A first implementation candidate now exists in the repository. It includes:
 8. Exercise three to five simultaneously playing sound things and inspect responsiveness and audio stability.
 9. Test duplicated sound things sharing one source alongside sound things using different sources; playback and independent settings work together.
 
-Pause/resume, seeking, source cleanup, backup/export, advanced sampler behavior, live MIDI keyboard input, MIDI-style pitched playback, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization are not yet implemented. They remain separate, testable capabilities for later milestones.
+Independent sample-region editing, One-Shot/Loop modes, and adjustable loop boundaries are introduced in candidate 0.4.0 and remain unverified. Seeking as a transport control, reverse, independent pitch shifting, envelopes, MIDI input, drum racks, modular effect racks, inter-object routing, automation, LFO modulation, and workstation-wide synchronization remain later capabilities.
 
 After this foundation is verified, those broader features can be developed without cramming them into the first prototype.
 
@@ -312,17 +337,26 @@ The roadmap is ordered by dependency: validate the current foundation, make soun
 
 These foundation checks are complete in the user's tested browser environment. Cross-device portability has not yet been tested.
 
-### Stage 2 — Strengthen the audio foundation
+### Stage 2 — Sampler foundation and playback reliability
 
-- Improve source lifecycle and player cleanup.
-- Handle missing, invalid, or unavailable audio sources clearly.
-- Add focused tests for playback state transitions and independent settings.
-- Establish the audio-engine interfaces needed for future instrument voices and processing without coupling them to React Flow.
+**Candidate 0.4.0 scope:** implement sample-region editing and basic One-Shot/Loop playback while strengthening the existing player lifecycle. Candidate 0.4.0 is implemented but is not accepted until its build and runtime checks pass.
 
-### Stage 3 — Build playable instruments and live MIDI input
+- Treat the imported audio as an immutable, shared source asset.
+- Give each sound thing independent sample start/end positions, measured in seconds relative to the source.
+- Allow a user to drag across the waveform to select a region and drag either boundary to refine it; provide precise start/end controls as an accessible alternative.
+- Display the selected region and its length against the full source waveform.
+- Provide One-Shot and Loop modes. One-Shot plays from sample start to sample end. Loop mode plays the selected sample region and repeats between its independently adjustable loop start/end points.
+- Constrain loop boundaries to the selected sample region and prevent zero-length or invalid regions.
+- Preserve region and loop settings in IndexedDB and portable project archives.
+- Load older 0.3.0 project/workspace records with the entire source selected and loop boundaries spanning that source.
+- Keep shared audio sources and each sound thing's sampler settings independent.
+- Verify pause/resume, stop, playback-rate changes, loop changes, and simultaneous players across selected regions; repair stale callbacks and cleanup issues found during testing.
+- Keep React Flow as the visual canvas only; sampler and audio state remain in the audio/application layers.
 
-- Extend sound things beyond one-shot playback into note-triggered instruments.
-- Add basic sampler controls such as pitch, playback range, and note duration/hold behavior.
+### Stage 3 — Expand sampler behavior into playable instruments and live MIDI input
+
+- Extend sound things beyond the initial One-Shot/Loop sampler into note-triggered instruments.
+- Add independent pitch control, note duration/hold behavior, and envelopes.
 - Support polyphonic note playing where the selected instrument allows it.
 - Connect a physical MIDI keyboard through the browser's Web MIDI API.
 - Provide a clear MIDI input connection/device choice and show which sound thing receives the notes. The initial default can be the selected or explicitly armed sound thing.
