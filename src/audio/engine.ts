@@ -207,7 +207,10 @@ export function updateSoundThingSettings(
     active.player.onstop = () => undefined;
     active.player.stop();
     active.player.dispose();
-    createActivePlayer(soundThingId, active.buffer, nextSettings, position, active.onStop);
+    const restartOffset = nextSettings.loop && position >= nextSettings.loopEnd
+      ? nextSettings.loopStart + ((position - nextSettings.loopEnd) % (nextSettings.loopEnd - nextSettings.loopStart))
+      : position;
+    createActivePlayer(soundThingId, active.buffer, nextSettings, restartOffset, active.onStop);
     return;
   }
 
