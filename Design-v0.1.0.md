@@ -1,8 +1,8 @@
 # Soundthing: Initial Design v0.1.3
 
 - **Artifact:** Initial design
-- **Version:** 0.1.3
-- **Status:** Living design document; prototype 0.3.0 accepted baseline; candidate 0.4.1 simplified loop behavior, verification pending
+- **Version:** 0.1.4
+- **Status:** Living design document; prototype 0.3.0 accepted baseline; candidate 0.4.1 sampler changes user-confirmed as improved; candidate 0.5.0 canvas interaction changes implemented, verification pending
 - **Development workflow:** [Development State Machine Workflow v1.6.0](https://github.com/KRMRGold/Meta-Modules/blob/main/workflows/Development-State-Machine-Workflow.md)
 - **Workflow adoption:** Soundthing initially adopted workflow v1.6.0. It follows the current canonical version by default; this records the starting point, not a permanent version pin.
 - **Collaboration guidance:** The applicable [Meta-Modules](https://github.com/KRMRGold/Meta-Modules) are summarized in Section 11.
@@ -352,6 +352,26 @@ These foundation checks are complete in the user's tested browser environment. C
 - Keep shared audio sources and each sound thing's sampler settings independent.
 - Verify pause/resume, stop, playback-rate changes, loop boundaries derived from the selected region, and simultaneous players; repair stale callbacks and cleanup issues found during testing.
 - Keep React Flow as the visual canvas only; sampler and audio state remain in the audio/application layers.
+
+### Candidate 0.5.0 — Canvas selection and navigation
+
+**Scope:** make canvas controls easier to distinguish and establish predictable mouse gestures for arranging sound things.
+
+- Give the MiniMap and React Flow zoom/control buttons dark, contrasting backgrounds instead of the default white/light appearance.
+- Left-drag on empty canvas space draws a selection rectangle. Sound things intersecting the rectangle are selected.
+- Left-drag a selected sound thing to move it; when multiple sound things are selected, move them together.
+- Middle-drag pans the canvas without changing the selection.
+- Preserve normal interaction with controls inside each sound thing; those controls must not initiate node dragging or box selection.
+- Keep React Flow responsible for canvas selection and navigation; do not introduce a separate canvas gesture engine.
+
+**Acceptance checks for candidate 0.5.0:**
+1. Confirm MiniMap and zoom/control buttons have visible dark backgrounds and readable icons.
+2. Left-drag on empty canvas space and confirm a selection rectangle appears.
+3. Select multiple sound things and drag one selected node; confirm the selected group moves together.
+4. Click and drag an unselected node; confirm it moves normally.
+5. Middle-drag empty canvas space; confirm the viewport pans.
+6. Confirm clicking, dragging, and adjusting waveform/transport/settings controls still works without moving nodes or creating a selection rectangle.
+7. Confirm zoom controls and MiniMap navigation remain usable.
 
 ### Stage 3 — Expand sampler behavior into playable instruments and live MIDI input
 
