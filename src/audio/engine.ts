@@ -4,6 +4,10 @@ export type PlaybackSettings = {
   playbackRate: number;
   volumeDb: number;
   loop: boolean;
+  sampleStart: number;
+  sampleEnd: number;
+  loopStart: number;
+  loopEnd: number;
 };
 
 type ActivePlayer = {
@@ -11,8 +15,11 @@ type ActivePlayer = {
   startedAt: number;
   startOffset: number;
   playbackRate: number;
-  duration: number;
+  sampleEnd: number;
+  loopStart: number;
+  loopEnd: number;
   loop: boolean;
+  onStop?: () => void;
 };
 
 const buffers = new Map<string, Tone.ToneAudioBuffer>();
@@ -24,12 +31,34 @@ export type DecodedSource = {
   waveform: number[];
 };
 
+export function normalizePlaybackSettings(
+  settings: Partial<PlaybackSettings>,
+  duration: number,
+): PlaybackSettings {
+  const sampleStart = Math.min(Math.max(settings.sampleStart ?? 0, 0), duration);
+  const sampleEnd = Math.min(Math.max(settings.sampleEnd ?? duration, sampleStart + 0.01), duration);
+  const loopStart = Math.min(Math.max(settings.loopStart ?? sampleStart, sampleStart), sampleEnd - 0.01);
+  const loopEnd = Math.min(Math.max(settings.loopEnd ?? sampleEnd, loopStart + 0.01), sampleEnd);
+
+  return {
+    playbackRate: Math.min(Math.max(settings.playbackRate ?? 1, 0.05), 4),
+    volumeDb: Math.min(Math.max(settings.volumeDb ?? -6, -60), 6),
+    loop: settings.loop ?? false,
+    sampleStart,
+    sampleEnd,
+    loopStart,
+    loopEnd,
+  };
+}
+
 export async function registerAudioSource(
   sourceId: string,
   blob: Blob,
 ): Promise<DecodedSource> {
   const context = Tone.getContext().rawContext as AudioContext;
   const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+  const previous = buffers.get(sourceId);
+  if (previous) previous.dispose();
   buffers.set(sourceId, new Tone.ToneAudioBuffer(decoded));
 
   const channel = decoded.getChannelData(0);
@@ -50,8 +79,12 @@ export async function registerAudioSource(
 
 function currentPosition(active: ActivePlayer): number {
   const elapsed = Math.max(0, (Tone.now() - active.startedAt) * active.playbackRate);
-  const position = active.startOffset + elapsed;
-  return active.loop ? position % active.duration : Math.min(position, active.duration);
+  let position = active.startOffset + elapsed;
+  if (active.loop && position >= active.loopEnd) {
+    const loopLength = active.loopEnd - active.loopStart;
+    position = active.loopStart + ((position - active.loopEnd) % loopLength);
+  }
+  return Math.min(position, active.sampleEnd);
 }
 
 export async function playSoundThing(
@@ -71,38 +104,45 @@ export async function playSoundThing(
   }
 
   const buffer = buffers.get(sourceId);
-  if (!buffer) {
-    throw new Error("This sound thing's audio source is not loaded.");
+  if (!buffer) throw new Error("This sound thing's audio source is not loaded.");
+
+  const config = normalizePlaybackSettings(settings, buffer.duration);
+  let offset = pausedOffsets.get(soundThingId) ?? config.sampleStart;
+  pausedOffsets.delete(soundThingId);
+  if (offset < config.sampleStart || offset >= config.sampleEnd) offset = config.sampleStart;
+  if (config.loop && offset >= config.loopEnd) {
+    offset = config.loopStart + ((offset - config.loopEnd) % (config.loopEnd - config.loopStart));
   }
 
-  const offset = pausedOffsets.get(soundThingId) ?? 0;
-  pausedOffsets.delete(soundThingId);
-
   const player = new Tone.Player(buffer).toDestination();
-  player.loop = settings.loop;
-  player.playbackRate = settings.playbackRate;
-  player.volume.value = settings.volumeDb;
+  player.playbackRate = config.playbackRate;
+  player.volume.value = config.volumeDb;
+  player.loop = config.loop;
+  player.setLoopPoints(config.loopStart, config.loopEnd);
 
   const active: ActivePlayer = {
     player,
     startedAt: Tone.now(),
     startOffset: offset,
-    playbackRate: settings.playbackRate,
-    duration: buffer.duration,
-    loop: settings.loop,
+    playbackRate: config.playbackRate,
+    sampleEnd: config.sampleEnd,
+    loopStart: config.loopStart,
+    loopEnd: config.loopEnd,
+    loop: config.loop,
+    onStop,
   };
 
   player.onstop = () => {
-    if (players.get(soundThingId)?.player === player) {
-      players.delete(soundThingId);
-      pausedOffsets.delete(soundThingId);
-    }
+    if (players.get(soundThingId)?.player !== player) return;
+    players.delete(soundThingId);
+    pausedOffsets.delete(soundThingId);
     player.dispose();
     onStop?.();
   };
 
   players.set(soundThingId, active);
-  player.start(undefined, offset);
+  if (config.loop) player.start(undefined, offset);
+  else player.start(undefined, offset, config.sampleEnd - offset);
 }
 
 export function pauseSoundThing(soundThingId: string): boolean {
@@ -115,7 +155,7 @@ export function pauseSoundThing(soundThingId: string): boolean {
   active.player.stop();
   active.player.dispose();
 
-  if (active.loop || offset < active.duration) {
+  if (active.loop || offset < active.sampleEnd) {
     pausedOffsets.set(soundThingId, offset);
     return true;
   }
@@ -127,7 +167,6 @@ export function stopSoundThing(soundThingId: string): void {
   const active = players.get(soundThingId);
   pausedOffsets.delete(soundThingId);
   if (!active) return;
-
   players.delete(soundThingId);
   active.player.onstop = () => undefined;
   active.player.stop();
@@ -142,6 +181,13 @@ export function updateSoundThingSettings(
   if (!active) return;
 
   const position = currentPosition(active);
+  const regionChanged = settings.sampleStart !== undefined || settings.sampleEnd !== undefined;
+  if (regionChanged) {
+    stopSoundThing(soundThingId);
+    active.onStop?.();
+    return;
+  }
+
   active.startOffset = position;
   active.startedAt = Tone.now();
 
@@ -149,12 +195,22 @@ export function updateSoundThingSettings(
     active.playbackRate = settings.playbackRate;
     active.player.playbackRate = settings.playbackRate;
   }
-  if (settings.volumeDb !== undefined) {
-    active.player.volume.value = settings.volumeDb;
+  if (settings.volumeDb !== undefined) active.player.volume.value = settings.volumeDb;
+  if (settings.loopStart !== undefined) {
+    active.loopStart = settings.loopStart;
+    active.player.loopStart = settings.loopStart;
   }
-  if (settings.loop !== undefined) {
+  if (settings.loopEnd !== undefined) {
+    active.loopEnd = settings.loopEnd;
+    active.player.loopEnd = settings.loopEnd;
+  }
+  if (settings.loop !== undefined && settings.loop !== active.loop) {
     active.loop = settings.loop;
     active.player.loop = settings.loop;
+    if (!settings.loop) {
+      const remaining = Math.max(0, active.sampleEnd - position) / active.playbackRate;
+      active.player.stop(Tone.now() + remaining);
+    }
   }
 }
 
