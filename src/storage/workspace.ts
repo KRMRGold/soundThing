@@ -23,7 +23,28 @@ export type StoredSoundThing = {
   playbackRate: number;
   volumeDb: number;
   loop: boolean;
+  sampleStart: number;
+  sampleEnd: number;
+  loopStart: number;
+  loopEnd: number;
 };
+
+export function normalizeStoredSoundThing(value: StoredSoundThing): StoredSoundThing {
+  const duration = Math.max(0.01, Number.isFinite(value.duration) ? value.duration : 0.01);
+  const minimumRegion = Math.min(0.01, duration);
+  const sampleStart = Math.min(Math.max(Number.isFinite(value.sampleStart) ? value.sampleStart : 0, 0), duration - minimumRegion);
+  const sampleEnd = Math.min(Math.max(Number.isFinite(value.sampleEnd) ? value.sampleEnd : duration, sampleStart + minimumRegion), duration);
+  const loopStart = Math.min(Math.max(Number.isFinite(value.loopStart) ? value.loopStart : sampleStart, sampleStart), sampleEnd - minimumRegion);
+  const loopEnd = Math.min(Math.max(Number.isFinite(value.loopEnd) ? value.loopEnd : sampleEnd, loopStart + minimumRegion), sampleEnd);
+
+  return {
+    ...value,
+    sampleStart,
+    sampleEnd,
+    loopStart,
+    loopEnd,
+  };
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -96,5 +117,5 @@ export async function loadWorkspace(): Promise<StoredSoundThing[]> {
     },
   );
   database.close();
-  return record?.soundThings ?? [];
+  return (record?.soundThings ?? []).map((thing) => normalizeStoredSoundThing(thing));
 }
