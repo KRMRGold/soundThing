@@ -44,4 +44,8 @@ The browser copy is not a backup by itself: clearing site data or browser storag
 
 The project format has an explicit version field so it can evolve as soundThing gains instruments, routing, automation, and other capabilities.
 
-See [Design-v0.1.0.md](./Design-v0.1.0.md) for the broader design and development path.
+## Project documentation
+
+- [Maintenance guide](./docs/MAINTENANCE.md) — current code map, implementation state, persistence details, known limitations and next steps.
+- [Design document](./Design-v0.1.0.md) — product vision, principles and longer-term direction.
+- [Build specification](./build-spec.md) — proposed milestones and acceptance criteria.
