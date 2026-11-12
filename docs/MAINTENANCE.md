@@ -25,7 +25,8 @@ The code and user-confirmed decisions establish what currently exists and what t
 | Item | Current state |
 |---|---|
 | Repository branch | `main` |
-| Source snapshot inspected | `3e4e58207ea5c5f052a6beee45d915aaf6e4b8df` |
+| Source snapshot inspected | `3e4e58207ea5c5f052a6beee45d915aaf6e4b8df` (subsequent commits in this audit changed documentation only) |
+| Maintenance audit commit | `d09837d8c8077cb12c1ce4a6a7bf6956f546553b` |
 | App/package version | `0.5.0` |
 | Last accepted baseline | `0.3.0` |
 | Sampler candidate | `0.4.1` — implemented; user reported it works better; full acceptance verification is not recorded |
@@ -34,6 +35,7 @@ The code and user-confirmed decisions establish what currently exists and what t
 | Current automated checks | TypeScript check and Vite production build |
 | Behavioral automated tests | None currently present |
 | CI at inspected source snapshot | PASS — workflow run [#53](https://github.com/KRMRGold/soundThing/actions/runs/43149491451), exact commit `3e4e582` |
+| CI for maintenance audit | PASS — workflow run [#54](https://github.com/KRMRGold/soundThing/actions/runs/43149850894), exact documentation commit `d09837d` |
 | Browser/runtime acceptance | User-run checks for 0.3.0; candidates 0.4.1 and 0.5.0 still need their documented acceptance checks |
 
 The accepted `0.3.0` baseline has recorded successful CI typecheck/build and user-run checks for playback, simultaneous sound things, independent settings, local workspace persistence, portable project save/open, separate Chrome-profile import, managed audio after moving the original file, and shared-source duplicates. The evidence is summarized in the design document.
@@ -93,6 +95,7 @@ No additional runtime or test framework should be introduced without a concrete 
 
 - Import audio through the file picker or by dropping audio onto the canvas.
 - Supported extensions in the import filter include WAV, MP3, OGG/OGA, FLAC, M4A, AAC and AIFF. Actual decoding depends on browser codec support.
+- **Unverified source observation:** the multi-file import position offset uses the node count captured before the import loop, so importing several files in one batch may place them at overlapping positions. Confirm in the browser before deciding whether to fix.
 - Each import creates a managed audio-source record with a generated ID, original file name/type/size/blob, decoded duration and waveform peak data.
 - A sound thing references a source and has its own canvas position and playback settings.
 - Duplicating a sound thing creates a new sound-thing ID while reusing the same source ID; the duplicate starts with default rate/level/loop settings, independent of the original.
@@ -164,7 +167,9 @@ Stored sound-thing fields, defined in `src/storage/workspace.ts` and assembled f
 - `sampleEnd`
 - `loopStart` and `loopEnd` (legacy-compatible persisted fields; the current playback loop uses the selected sample region instead)
 
-The workspace and project-file modules normalize sample boundaries. The minimum selected region is up to 10 ms, limited by source duration. The intended invariant is `0 <= sampleStart < sampleEnd <= duration`. Do not rename or remove persisted fields without a migration or compatibility mapping.
+The workspace and project-file modules normalize sample boundaries. The minimum selected region is up to 10 ms, limited by source duration. The intended invariant is `0 <= sampleStart < sampleEnd <= duration`. Sample-region positions are measured in seconds relative to the original source; future tempo values are planned in BPM and beat positions. Do not rename or remove persisted fields without a migration or compatibility mapping.
+
+The build spec's proposed future sound-thing model adds a `mode` (`sample`, `instrument` or `drumRack`), sampler configuration, optional original-tempo metadata, instrument settings (root note, polyphony, envelope), drum-rack slices/pads and `createdFrom` provenance. These are target fields, not part of the current persisted schema.
 
 ### Portable project format
 
@@ -283,7 +288,7 @@ The build spec maps its milestones to the design document's stages. The sequence
 | M6 | Sample-based instruments and live MIDI input | Planned: root note, polyphony, envelopes, velocity, hold/loop behavior, Web MIDI device selection, arm/receive behavior and stuck-note protection. Computer-keyboard piano fallback is only a proposal. |
 | M7 | Master tempo and synchronization | Planned SPIKE for repitch vs pitch-preserving stretch; check licenses. Then original-tempo markers, effective tempo, quantized start and phase-aligned loops. |
 | M8 | Slicing and drum racks | Planned SPIKE comparing Ableton Live and Bitwig conventions; transient/beat/region/manual slicing, non-destructive shared source, pad mapping, per-pad level and possible choke groups. |
-| M9 | Audio/control graph, effects racks and routing | Planned: explicit typed graph, validated ports/edges, cycle rules, graph persistence, generated React Flow edges, effects nodes and sidechain research/fallback. |
+| M9 | Audio/control graph, effects racks and routing | Planned: explicit typed graph, validated ports/edges, cycle rules, graph persistence, generated React Flow edges, modular filter/delay/reverb/distortion/compressor nodes and sidechain research/fallback. |
 | M10 | Automation and LFOs | Planned: parameter registry, compatible control connections, tempo-locked looping automation patterns and LFO modulation. |
 | M11 | Recording, export, recovery and desktop evaluation | Planned: record master output (and possibly individual sound things), offline graph export, recovery snapshots, and evidence-based Tauri decision. |
 
@@ -314,7 +319,12 @@ The build spec identifies these concrete improvements:
 - Import warning for long or memory-heavy audio (proposed defaults: 10 minutes of stereo audio or approximately 100 MB decoded).
 - Request persistent browser storage with `navigator.storage.persist()`; show whether the request was granted and warn if denied.
 - Before replacing a workspace on project open, retain one recoverable previous-workspace slot and prompt for unsaved changes.
+- Validate the complete archive before touching the current workspace; apply an open atomically so a failed import cannot leave a half-replaced workspace.
 - Test repeated project opens, shared-source deletion, randomized reference lifecycles, restore-previous-workspace, large-file warnings, golden fixtures and browser restart/site-data behavior.
+
+### Open-project safety target
+
+The proposed flow is: validate and migrate the project first; if the current workspace has unsaved changes, ask before replacing it; retain the current workspace in one recoverable slot; import/remap sources; commit the new workspace only after all required steps succeed; offer **Restore previous workspace** after a successful replacement. Failure should leave the previous workspace usable and should not leak newly imported unreferenced sources.
 
 **Decision boundary:** content-hash reuse changes the design document's current fresh-internal-ID-on-import decision. The build spec explicitly requires the user's approval before starting this change. Do not implement it merely because it is in the roadmap.
 
@@ -328,8 +338,9 @@ These are target contracts, not current implementation facts:
 4. React Flow renders the graph and handles spatial interaction; it must not become the authority for audio routing, synchronization or modulation.
 5. The application owns source retention/reference counting; the audio engine owns decoded buffers/voices only while the application says they are live.
 6. Every player, voice and analyser needs an explicit disposal path; callbacks must not fire after disposal.
-7. Project format changes require migrations. Accept older supported versions through a migration chain, reject newer versions with a clear version-specific error, validate before modifying the workspace, and never partially apply a failed open.
-8. Keep audio source bytes immutable; transformations create new source assets and preserve provenance.
+7. The future audio graph uses typed `audio`, `sync` and `control` ports. Connections must be validated; audio cycles are rejected unless an explicit delay makes them safe. The application graph is authoritative and is compiled into Web Audio nodes.
+8. Project format changes require migrations. Accept older supported versions through a migration chain, reject newer versions with a clear version-specific error, validate before modifying the workspace, and never partially apply a failed open.
+9. Keep audio source bytes immutable; transformations create new source assets and preserve provenance.
 
 ## Risks and non-goals
 
